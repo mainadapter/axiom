@@ -1,6 +1,6 @@
 ---
 platform: ChatGPT / OpenAI
-version: 2.3.0-draft
+version: 2.3.1-draft
 requires: ../core.md
 last_reviewed: 2026-10-14
 verify_against:
@@ -54,11 +54,15 @@ The preferred personal ChatGPT materialization is a thin entry Skill with the co
 
 When GitHub access is available, durable canonical creation or modification should follow the GitHub contract: focused branch, draft pull request, user review, and no merge without explicit authorization. When Notion is available, maintain lightweight catalog metadata without copying the full canonical behavior there.
 
+Catalog use is distinct from an artifact's own runtime integrations. If a user says that a generated Skill should not save its outputs to Notion, continue to register the canonical Skill in the Axiom catalog when the catalog is enabled unless the user explicitly opts out of catalog registration itself.
+
 Axiom should not require the user to ask for `agent-spec`, `skill-spec`, repository paths, adapters, or handoff syntax explicitly. Requests such as “I need something that turns rough notes into a structured daily log” should be enough for Axiom to begin discovery and classification.
 
 ## Skill handoff
 
 Axiom specifies the reusable capability; ChatGPT's `skill-creator` should generate, update, test, or troubleshoot the final Skill when available.
+
+For reusable artifacts managed canonically by Axiom, create the canonical branch and draft pull request before producing the definitive ChatGPT Skill. If the user deliberately wants a pre-merge runtime test, materialize from the review branch only as a provisional deployment and report that status explicitly. After approval and merge, rebuild or update the deployment from the approved canonical revision when needed.
 
 Before handoff, provide enough information that the creator does not need to rediscover the intent:
 
