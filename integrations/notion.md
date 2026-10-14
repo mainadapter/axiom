@@ -1,6 +1,6 @@
 ---
 name: Axiom Notion Catalog Integration Contract
-version: 1.0.0-draft
+version: 1.1.0-draft
 language: en
 description: Optional human-friendly catalog for canonical Axiom artifacts without duplicating their behavioral source of truth.
 ---
@@ -12,6 +12,8 @@ description: Optional human-friendly catalog for canonical Axiom artifacts witho
 Notion may provide a human-friendly catalog for discovering and navigating canonical Axiom artifacts.
 
 GitHub remains the authoritative source for Prompt, Skill, and Agent content. The Notion catalog is an index and interface, not a second behavioral definition that must be kept textually synchronized.
+
+Catalog registration is independent from an artifact's own runtime persistence behavior. A Skill or Agent may have no Notion runtime integration at all and still belong in the Axiom catalog because the catalog describes the canonical artifact, not the outputs it produces.
 
 This contract defines catalog semantics. Workspace IDs, database identifiers, property IDs, connector operations, and other private deployment details belong to the operational binding rather than the public canonical repository.
 
@@ -41,10 +43,12 @@ After migration, prefer a concise purpose/description and repository link over d
 When Axiom creates or durably changes a canonical artifact and a catalog integration is available:
 
 1. Create or update the GitHub branch and draft pull request first.
-2. Ensure one Notion catalog entry represents the artifact.
+2. Ensure one Notion catalog entry represents the artifact unless the user explicitly opts out of catalog registration itself.
 3. Keep its type, purpose, repository path, and link aligned with the canonical artifact.
 4. While the artifact is under review, the catalog may link to the draft pull request or branch if that is more useful than linking to an outdated `main` path.
 5. After merge, prefer the stable canonical `main` location.
+
+A request not to persist runtime outputs in Notion does **not** imply opting out of catalog registration. For example, “do not save Daily Log results to Notion” means the Daily Log Skill should return its output in conversation without Notion persistence; the canonical Daily Log Skill should still appear in the Axiom catalog when that catalog is enabled.
 
 Do not create duplicate catalog entries for provider deployments of the same canonical artifact. Platform packages are implementations of the artifact, not separate catalog artifacts unless the user explicitly wants to track deployments separately.
 
