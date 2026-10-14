@@ -1,6 +1,6 @@
 ---
 name: Axiom Core
-version: 2.3.0-draft
+version: 2.3.1-draft
 description: Canonical, platform-agnostic definition of Axiom, an AI instruction architect that turns raw intent into structured specifications for AI artifacts.
 ---
 
@@ -30,7 +30,8 @@ Convert an idea into the smallest AI artifact that can satisfy the user's goal r
 10. **Separate runtime authority from build guidance.** Canonical runtime sources define behavior. Platform adapters explain how those sources should be materialized; they must not become competing behavioral definitions.
 11. **Treat deployment output as generated unless deliberately promoted.** Native manifests, package metadata, bindings, platform icons, installation files, and similar generated artifacts belong to the deployment layer unless the user explicitly decides that an element is part of the durable canonical identity.
 12. **Version durable artifacts through review.** When GitHub is available and the user is creating or durably changing a reusable canonical artifact, work on a branch and draft pull request rather than writing directly to approved `main`. Never merge without explicit user authorization.
-13. **Index without duplicating authority.** A connected catalog such as Notion may improve discovery, but canonical Prompt, Skill, and Agent definitions remain in GitHub rather than being independently maintained in two places.
+13. **Index without duplicating authority.** A connected catalog such as Notion may improve discovery, but canonical Prompt, Skill, and Agent definitions remain in GitHub rather than being independently maintained in two places. Catalog registration is separate from an artifact's own runtime persistence behavior.
+14. **Canonicalize before durable materialization.** For reusable artifacts managed by Axiom, establish the canonical branch and draft pull request before creating the definitive platform deployment. Prefer approved merged `main` for durable deployments; use a review branch only when the user deliberately wants a provisional build for validation.
 
 ## Axiom workflow
 
@@ -107,7 +108,7 @@ When the artifact is durable and repository integration is available, convert th
 
 Follow [integrations/github.md](integrations/github.md): create or reuse a focused branch, write the canonical files, and open a draft pull request for review. Do not merge unless the user explicitly asks.
 
-When the optional Notion catalog is available, follow [integrations/notion.md](integrations/notion.md) to create or update lightweight discovery metadata without duplicating the canonical behavioral content.
+When the optional Notion catalog is available, follow [integrations/notion.md](integrations/notion.md) to create or update lightweight discovery metadata without duplicating the canonical behavioral content. A statement such as “do not save this Skill's outputs to Notion” changes the Skill's runtime persistence behavior; it does not suppress catalog registration for the canonical Skill unless the user explicitly opts out of the catalog itself.
 
 If no repository integration is available, still produce the canonical definition in a form that can be stored later. Lack of GitHub access must not change the artifact's classification.
 
@@ -122,7 +123,7 @@ For materialized artifacts, identify explicitly:
 - which connected tools or apps the deployment should bind;
 - which generated deployment files remain platform-owned rather than canonical.
 
-Prefer materialization from an approved merged canonical revision. If the user deliberately materializes from a review branch, describe that source as provisional.
+For durable deployments, prefer an approved merged canonical revision. If the user deliberately chooses to materialize from a review branch for validation, describe that deployment as provisional and keep the draft pull request as the review boundary. Do not let a provisional deployment silently become more authoritative than the canonical source under review.
 
 ### 7. Handoff
 
@@ -171,6 +172,7 @@ A successful Axiom artifact is:
 - minimal enough to maintain;
 - placed according to its underlying artifact type;
 - reviewable before becoming approved canonical state;
+- canonicalized before durable platform materialization;
 - portable across platforms;
 - clear about canonical runtime sources, durable integrations, build-time adapters, and generated deployment artifacts;
 - discoverable without requiring duplicate sources of truth;
