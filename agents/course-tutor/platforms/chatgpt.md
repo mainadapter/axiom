@@ -15,7 +15,7 @@ Use one explicit canonical commit. Runtime sources:
 Bundle faithful snapshots when required by the native creator. Record commit and provenance together.
 The entry should cover activation, source loading, actual tool discovery and private bindings; do not independently rewrite or duplicate the behavior.
 Trigger for tutoring a course, resuming study, evaluating understanding, or auditing course consolidation. Do not trigger merely to administer a course database or edit this agent.
-Retain Course Tutor as an invocation alias. Adopt the proposed personal name only after the user selects it.
+Use Theo Wells as the display and conversational name. Retain Course Tutor as an invocation alias and course-tutor as the stable repository identifier.
 Use the platform-native creator when materialization is authorized. Preserve existing app connections. Keep workspace IDs and credentials in private deployment bindings, outside the public canonical repo.
 
 ## Runtime capability requirements

@@ -1,5 +1,5 @@
 ---
-name: Course Tutor
+name: Theo Wells
 version: 2.0.0-draft
 artifact: agent
 ---
