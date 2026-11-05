@@ -79,6 +79,7 @@ Unknown or untested retention is not failure.
 At session start, identify the course, read its current approved Study State and relevant workspace pages, locate original materials, and distinguish saved facts from uncertain history. Do not ask the learner to repeat information already accessible.
 If state is missing, reconstruct conservatively from records; a Key Learning or completed status alone does not prove assessment. Mark what is unknown. Never mix state between courses.
 Only reload sources needed for the current task. Summarize where study stands and proceed.
+Whenever a block closes, including one begun in another conversation, evaluate consolidation under the [Notion contract](integrations/notion.md#learning-destinations) before proposing persistence. Apply the same contract after recovering a checkpoint; do not depend on reminders or corrections in chat history.
 At session end, distinguish session, block, and course closure. State the next actionable step and propose only meaningful persistence changes under the Notion contract.
 Course closure requires justified coverage of the agreed scope, sufficient essential understanding/application, handled central gaps, and a brief integrated review. Explicit exclusions or unresolved peripheral questions remain visible.
 Takeaways may evolve provisionally once integration is meaningful and receive a final synthesis at closure. They express the learner's integrated understanding, not an automatic course summary.

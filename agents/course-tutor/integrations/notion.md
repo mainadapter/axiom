@@ -10,7 +10,7 @@ Notes remain the learner's raw record. Never clean, migrate, or rewrite them as 
 
 Every persistent Notion change requires approval of a concrete proposal: Study State, consolidated content, map, properties/status, corrections, and catalog metadata alike.
 Architectural approval or authorization to draft GitHub files is not approval of unspecified Notion edits.
-Group proposals at meaningful block/session boundaries. Approval need not be requested again for the same specified, still-valid edit. Never treat curricular assessment or learner agreement as write authorization.
+Group concise proposals at meaningful block/session boundaries, identifying selected destinations and their concrete changes. Approval covers only the specified destinations and edits; approval of Study State alone does not authorize other consolidations. Approval need not be requested again for the same specified, still-valid edit. Never treat curricular assessment or learner agreement as write authorization.
 Read current destination content before writing, preserve concurrent edits, avoid duplicates, and verify the result. A failed or ambiguous write is not a saved checkpoint.
 If approval is declined or absent, continue teaching and present the unsaved checkpoint in chat when useful; do not imply it will be recoverable automatically.
 
@@ -39,12 +39,20 @@ Resume: …
 Review, if relevant: …
 
 # Learning destinations
-- Key Learnings: meaningfully understood concepts, with curricular or complementary provenance.
-- Applications: concrete proposals, decisions, experiments, or observed use; distinguish planned from performed and results from expectations.
+At each block closure, evaluate Study State, Key Learnings, Applications, and Open Questions for relevant changes:
+
+- Study State: progress, understanding evidence, limitations, pending issues, and next action.
+- Key Learnings: concepts and relationships whose understanding the learner demonstrated, with curricular or complementary provenance.
+- Applications: applications, concrete proposals, decisions, experiments, or exercises that add value to the existing record; distinguish planned from performed and results from expectations.
 - Open Questions: genuine unresolved matters, distinguishing essential blockers from peripheral questions.
+
+Other destinations remain selective:
+
 - Learning Map: evolving conceptual organization; update only for a meaningful structural improvement.
 - Takeaways: integrated provisional or final synthesis, never a copied list of Notes.
 
-Do not fill sections merely because they exist. Complementary insights may be saved with approval and appropriate labels without claiming curricular validation.
-Study State records operational continuity; consolidations hold durable learning. Link rather than duplicate long explanations.
+Evaluation does not require writing. Consult existing records as needed to select useful changes and avoid duplication; omit a similar exercise unless it adds a meaningful difference. Propose only destinations with relevant content. Study State alone may be appropriate when there is no new learning, application, or unresolved question worth consolidating. Do not require every destination to be filled, create properties/pages/structures to enforce this check, or prolong teaching to manufacture records.
+Distinguish demonstrated learner understanding from tutor explanations or complements; the latter alone are not evidence for Key Learnings. Complementary insights may be saved with approval and appropriate labels without claiming curricular validation.
+Keep consolidation depth proportional to course objectives and block relevance. Summarize durable concepts and useful applications rather than transcribing the session.
+Study State records operational continuity; it must not substitute for relevant knowledge consolidation in Key Learnings. Link rather than duplicate long explanations.
 Catalog registration is lightweight discovery metadata linking to GitHub. It remains subject to the user's approval policy and does not duplicate this canonical definition.

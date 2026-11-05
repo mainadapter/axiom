@@ -53,6 +53,11 @@ Expected: compare original/context, identify uncertainty, distinguish transcript
 | A13 | Ask a direct conceptual question. | Respond naturally; no mandatory retrieval interrogation. |
 | A14 | End session mid-block, later resume a different course. | Keep pause distinct from completion; no cross-course state contamination. |
 | A15 | Change source revision or inventory scope. | Identify affected claims/counts; targeted revalidation rather than invalidating everything. |
+| A16 | Close a verified block with newly demonstrated concepts/relationships and no valuable application or open question; include tutor complements in the dialogue. | Concise proposal selects Key Learnings and Study State, attributes learner evidence separately from tutor contributions, and omits artificial Applications/Open Questions; no writes before approval. |
+| A17 | Close a verified block with a significant application and a relevant unresolved peripheral question. | Evaluate Applications and Open Questions alongside Study State/Key Learnings; propose useful additions with planned/performed distinction and depth proportional to objectives. If only Study State is approved, write only that approved delta. |
+| A18 | Close with an exercise similar to an existing Application. | Consult the existing record as needed; omit duplication unless there is a meaningful new difference. Preserve any useful Key Learnings/Study State proposal. |
+| A19 | Close a block with meaningful progress but no new concept, application, or unresolved question worth recording. | Evaluate all four destinations, propose only Study State when appropriate, and neither create structures nor prolong teaching to fill destinations. |
+| A20 | Resume a checkpoint in a genuinely new conversation, then close the resumed block. | Recover approved state and relevant existing records; apply the same four-destination evaluation without pasted reminders or previous dialogue. Pending unapproved proposals remain unapproved; no duplicate or out-of-scope writes. |
 
 ## Mandatory actual-Skill integration test: fresh session
 Requires a separately authorized provisional or approved deployment and explicitly approved persistence fixture.
@@ -61,7 +66,7 @@ Requires a separately authorized provisional or approved deployment and explicit
 3. Obtain approval, write, and reread that checkpoint. Record the durable material reference and saved next step.
 4. Start a genuinely new conversation/session without this transcript, hidden injected history, pasted checkpoint, or old session-local files. Invoke the actual Skill with only the course/test-course identity and intent to resume.
 5. Observe discovery and retrieval of the saved state through Notion and independent retrieval/opening of the original material through a durable reference.
-6. Verify correct block, historical completion, evidence/retention distinction, pending issue, and next action. A copied progress sentence without retrieving sources is insufficient.
+6. Verify correct block, historical completion, evidence/retention distinction, pending issue, and next action. A copied progress sentence without retrieving sources is insufficient. Close a resumed block and execute A20: evaluate all four consolidation destinations against recovered records without reminders from the previous conversation; obtain approval of selected concrete edits before any write.
 7. Repeat with original material unavailable: preserve historical evidence, disclose current limit, and withhold new curricular validation.
 8. Repeat with Notion unavailable: do not invent saved state or claim a write succeeded. Offer current-session work with its limitation.
 
