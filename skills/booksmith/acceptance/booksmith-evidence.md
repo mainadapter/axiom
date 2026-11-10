@@ -70,3 +70,8 @@ Visual sampling compared a source chapter opening to its reflow: uppercase title
 No Kindle hardware, Send to Kindle, browser or landscape acceptance was executed. Rasterization is 144 DPI; source encoding/resolution and accessibility semantics are not guaranteed. Internal image-only illustrations can require intervention because they resemble scans. Overlapping compositions, arbitrary vector reconstruction, OCR, advanced tables/formulas and linked notes remain outside scope.
 
 Font-name style evidence, invisible mixed paragraph boundaries and unmarked same-font titles remain limitations. Real-book classification stays **Revisão recomendada**: fewer findings and EPUBCheck success do not justify approval. The installed ChatGPT preview remains unchanged.
+
+
+## Directed anthology revision
+
+See [anthology-evidence.md](anthology-evidence.md) for the executed six-story hierarchy correction, legacy-directory removal, independent editorial oracle and current compatibility evidence. Earlier results above retain their original scope and date; the revised canonical code has not replaced the installed Skill.

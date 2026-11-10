@@ -9,7 +9,7 @@ from pypdf import PdfReader
 
 from .common import compact, finding
 from .images import capture
-from .structure import profiles, headings, font_style, append_spans, quote_runs
+from .structure import profiles, document_structure, font_style, append_spans, quote_runs
 
 HEADING = re.compile(r'^(?:cap[ií]tulo|chapter|parte|part|se[cç][aã]o|section)\s+(?:\d+|[IVXLCDM]+)\b', re.I)
 
@@ -114,7 +114,9 @@ def extract(path):
         findings.append(finding('no_body', 'fail', 'blocking', 'Todo o texto foi classificado como margem; inspeção necessária.'))
     vocabulary = set(re.findall(r'\b[\wÀ-ÿ]+(?:-[\wÀ-ÿ]+)?\b', ' '.join(l['text'] for l in kept)))
     layout = profiles(kept)
-    hs = headings(kept, layout)
+    hs, editorial = document_structure(kept, layout)
+    frontmatter = set(editorial['frontmatter'])
+    backmatter = set(editorial['backmatter'])
     findings = [f for f in findings if not (f['code']=='unresolved_pagination' and 'roman_layout' in hs.get(f['evidence'].get('source'),{}).get('evidence',[]))]
     quotes, possible_quotes = quote_runs(kept, layout, hs)
     blocks = []
@@ -135,6 +137,10 @@ def extract(path):
     for _, _, event_kind, l in events:
         if event_kind == 0:
             blocks.append(dict(id=f'b{len(blocks)+1}', kind='image', text='', source=[], asset=l['id'], cover=l['cover'], display_width_percent=l['display_width_percent']))
+            if frontmatter and l['page'] < next(x['page'] for x in kept if x['id']==editorial['parents'][0]):
+                blocks[-1]['content_role']='frontmatter'
+            if backmatter and l['page'] >= next(x['page'] for x in kept if x['id']==editorial['backmatter'][0]):
+                blocks[-1]['content_role']='backmatter'
             previous = None
             continue
         p = layout[l['page']]
@@ -148,7 +154,7 @@ def extract(path):
             findings.append(finding('small_text', 'inconclusive', 'review', 'Possível nota ou elemento especial; texto mantido, vínculo não inferido.', source=l['id']))
         if any(ord(c) < 32 and not c.isspace() or c == '\ufffd' for c in l['text']):
             findings.append(finding('invalid_glyph', 'fail', 'blocking', 'Caractere inválido na extração.', source=l['id']))
-        new = previous is None or heading or blocks[-1]['kind'] in ('heading','separator')
+        new = previous is None or heading or l['id'] in frontmatter or (l['id'] in backmatter and previous['id'] not in backmatter) or blocks[-1]['kind'] in ('heading','separator')
         separator = bool(re.fullmatch(r'(?:\*\s*){3,}|[•·]{3,}|[—–]{3,}',l['text']))
         dialogue = bool(re.match(r'^[—–](?![—–])', l['text']))
         if separator or dialogue:
@@ -175,6 +181,10 @@ def extract(path):
         if new:
             kind = 'heading' if heading else 'separator' if separator else 'quote' if quote else 'paragraph'
             block = dict(id=f'b{len(blocks)+1}', kind=kind, text=l['text'], source=[l['id']], spans=[dict(s) for s in l['spans']])
+            if l['id'] in frontmatter:
+                block['content_role']='frontmatter'
+            if l['id'] in backmatter:
+                block['content_role']='backmatter'
             if heading:
                 block.update(level=hs[l['id']]['level'], heading_evidence=hs[l['id']]['evidence'])
                 if block['level']>1 and not any(b['kind']=='heading' and b.get('level',1)==1 for b in blocks):
@@ -217,4 +227,5 @@ def extract(path):
     if not any(b['kind'] == 'heading' for b in blocks):
         findings.append(finding('no_headings', 'inconclusive', 'review', 'Nenhum título reconhecido; sumário terá entrada única.'))
     findings.append(finding('device_test', 'unavailable', 'tolerable', 'Leitor físico e serviço Send to Kindle não testados.'))
-    return dict(lines=lines, blocks=blocks, pages=pages, findings=findings, transformations=transforms, assets=assets, image_sources=image_sources)
+    return dict(lines=lines, blocks=blocks, pages=pages, findings=findings, transformations=transforms, assets=assets, image_sources=image_sources,
+                editorial_structure=editorial)

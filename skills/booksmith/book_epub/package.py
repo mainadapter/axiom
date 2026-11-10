@@ -36,8 +36,14 @@ def xhtml(title, lang, body):
 def chapters(model):
     result = []
     for block in model['blocks']:
-        if not result or (block['kind'] == 'heading' and block.get('level',1) == 1):
-            result.append({'name': f'chapter-{len(result)+1:04}.xhtml', 'label': block['text'] if block['kind'] == 'heading' else model['metadata']['title'], 'blocks': []})
+        back_start = block.get('content_role')=='backmatter' and result and result[-1]['blocks'][-1].get('content_role')!='backmatter'
+        if not result or back_start or (block['kind'] == 'heading' and block.get('level',1) == 1):
+            label = block['text'] if block['kind']=='heading' else model['metadata']['title']
+            if block.get('content_role')=='frontmatter':
+                label = 'Material pré-textual' if model['metadata']['language'].lower().startswith('pt') else 'Front matter'
+            if block.get('content_role')=='backmatter':
+                label = 'Créditos e informações editoriais' if model['metadata']['language'].lower().startswith('pt') else 'Publishing information'
+            result.append({'name': f'chapter-{len(result)+1:04}.xhtml', 'label': label, 'blocks': []})
         result[-1]['blocks'].append(block)
     return result
 

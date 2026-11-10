@@ -15,12 +15,71 @@ from xml.etree import ElementTree as ET
 
 from .common import compact, finding, digest
 from .package import XHTML, EPUB, chapters, css, navigation_entries
+from .structure import document_structure, profiles, roman_value
 
 NS = {'h': XHTML, 'o': 'http://www.idpf.org/2007/opf'}
 
 def require(condition, message):
     if not condition:
         raise ValueError(message)
+
+
+def audit_editorial(model):
+    """Source-context checks, independent of valid links and serialized model agreement.
+
+    These bounded checks cannot certify every editorial choice. Legacy schema 1
+    lacks the typography ledger; never manufacture retrospective evidence.
+    """
+    if model.get('schema',1)<2:
+        return [finding('editorial_structure','unavailable','tolerable',
+                        'Bundle histórico sem evidência tipográfica suficiente; modelo não migrado.')]
+    lines=[l for l in model['lines'] if not l.get('excluded')]
+    if not lines:
+        return []
+    _, context=document_structure(lines, profiles(lines))
+    by_source={s:b for b in model['blocks'] for s in b['source']}
+    by_id={l['id']:l for l in lines}
+    checks=[]
+    def emit(status, impact, detail, ids, **extra):
+        checks.append(finding('editorial_structure',status,impact,detail,
+            source=ids, pages=sorted({by_id[i]['page'] for i in ids}),
+            blocks=list(dict.fromkeys(by_source[i]['id'] for i in ids if i in by_source)), **extra))
+    for ident in context['parents']:
+        b=by_source.get(ident,{})
+        if b.get('kind')!='heading' or b.get('level')!=1:
+            emit('fail','blocking','Título principal contradiz ciclos romanos recorrentes na fonte.',[ident],reason='parent_level')
+    for ident in context['frontmatter']:
+        b=by_source.get(ident,{})
+        if b.get('kind')=='heading' or b.get('content_role')!='frontmatter':
+            emit('fail','blocking','Pré-texto confirmado pelo índice foi tratado como estrutura narrativa.',[ident],reason='frontmatter_role')
+    for ident in context['backmatter']:
+        b=by_source.get(ident,{})
+        if b.get('kind')=='heading' or b.get('content_role')!='backmatter':
+            emit('fail','blocking','Informações editoriais finais confirmadas pela fonte sem separação da narrativa.',[ident],reason='backmatter_role')
+    if context['parents'] and not context['frontmatter'] and lines[0]['id']!=context['parents'][0]:
+        emit('inconclusive','review','Material anterior aos ciclos narrativos sem confirmação suficiente de pré-texto.',
+             [lines[0]['id'],context['parents'][0]],reason='uncertain_frontmatter')
+    parent=None
+    previous=0
+    for l in lines:
+        b=by_source.get(l['id'],{})
+        if b.get('kind')=='heading' and b.get('level')==1 and roman_value(l['text']) is None:
+            parent=l['id']; previous=0
+        if l['id'] not in context['romans']:
+            continue
+        value=roman_value(l['text'])
+        ids=([parent] if parent else [])+[l['id']]
+        if b.get('kind')!='heading' or b.get('level')!=2:
+            emit('fail' if parent else 'inconclusive','blocking' if parent else 'review',
+                 'Subdivisão romana sem nível subordinado confirmado.',ids,reason='roman_level')
+        if parent is None or value!=previous+1:
+            emit('inconclusive','review','Sequência romana sem pai ou com salto/reinício não explicado.',ids,
+                 reason='roman_sequence',previous=previous,observed=value)
+        previous=value
+    if not checks:
+        emit('pass','review','Verificações contextuais limitadas: ciclos romanos e pré-texto não contradizem o modelo; não é certificação editorial universal.',
+             context['parents'] or [lines[0]['id']],parents=len(context['parents']),romans=len(context['romans']))
+    return checks
 
 def audit_model(model):
     checks = []
@@ -132,7 +191,7 @@ def epubcheck(path, command=None):
         return finding('epubcheck', status, impact, 'Validação de conformidade EPUB; não certifica fidelidade editorial.', report=data, returncode=result.returncode)
 
 def validate(path, model, profile, settings, labels=None, command=None):
-    checks = audit_model(model)
+    checks = audit_model(model) + audit_editorial(model)
     try:
         with zipfile.ZipFile(path) as z:
             names = z.namelist()

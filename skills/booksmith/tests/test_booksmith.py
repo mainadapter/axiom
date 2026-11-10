@@ -305,5 +305,9 @@ class BooksmithTests(unittest.TestCase):
         self.assertIn(result.returncode,(0,1))
         refine(self.root/'old',self.root/'new',paragraph_gap=1,command=COMMAND)
         self.assertEqual((self.root/'old/model.json').read_bytes(),(self.root/'new/model.json').read_bytes())
+        with zipfile.ZipFile(self.root/'old/book.epub') as a, zipfile.ZipFile(self.root/'new/book.epub') as b:
+            self.assertEqual(a.namelist(),b.namelist())
+            self.assertTrue(all(a.read(n)==b.read(n) for n in a.namelist() if n not in ('EPUB/style.css','EPUB/nav.xhtml')))
+        self.assertEqual(json.loads((self.root/'new/model.json').read_text())['schema'],1)
 
 if __name__=='__main__':unittest.main()

@@ -28,6 +28,7 @@ ACTIONS = {
     'hyphenation':'Verifique o hífen preservado na origem.',
     'indented_run':'Confirme se o recuo representa uma citação.',
     'heading_hierarchy':'Confira a relação entre título e subtítulo.',
+    'editorial_structure':'Compare títulos pais, ciclos romanos e pré-texto com os blocos e páginas indicados; links válidos não comprovam estrutura editorial.',
     'epubcheck':'Consulte as mensagens do validador antes de aprovar.',
 }
 
@@ -49,12 +50,18 @@ def diagnostic_summary(findings, model):
             ls=[line_by_id[i] for i in ids if i in line_by_id]
             if ls: e['pages']=sorted({l['page'] for l in ls})
             if e: g['examples'].append(e)
-    return sorted(groups.values(),key=lambda g:(g['status']=='pass',{'blocking':0,'review':1,'tolerable':2}[g['impact']],g['code']))
+    return sorted(groups.values(),key=lambda g:(g['status']=='pass',g['code'] not in ('editorial_structure','heading_hierarchy'),{'blocking':0,'review':1,'tolerable':2}[g['impact']],g['code']))
 
 
 def report_markdown(report):
     text=[f'Estado: **{report["state"]}**','',f'Versão: {report["revision"]}. Perfil: {report["profile"]}.',
           'Aprovação automatizada não garante fidelidade editorial absoluta.','']
+    editorial=[g for g in report['summary'] if g['code'] in ('editorial_structure','heading_hierarchy')]
+    if editorial:
+        text += ['### Estrutura editorial','']
+        for g in editorial:
+            text.append(f'- **{g["status"]}**: {g["detail"]} ({g["count"]} ocorrências).')
+        text += ['Links válidos e EPUBCheck não comprovam a hierarquia da obra.','']
     for status,label in [('fail','Falhas detectadas'),('inconclusive','Ambiguidades'),('unavailable','Verificações indisponíveis'),('pass','Verificações realizadas')]:
         groups=[g for g in report['summary'] if g['status']==status]
         text += [f'### {label}','']
@@ -65,7 +72,7 @@ def report_markdown(report):
                 text.append('  Ação: '+g['action'])
                 for e in g['examples']:
                     # Compact source/page references, without hundreds of repeated messages.
-                    ref={k:v for k,v in e.items() if k in ('page','pages','source','block','bbox','reason','error')}
+                    ref={k:v for k,v in e.items() if k in ('page','pages','source','block','blocks','bbox','reason','error')}
                     if ref: text.append('  Exemplo: '+json.dumps(ref,ensure_ascii=False))
         text += ['']
     text += ['### Transformações','']
