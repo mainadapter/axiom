@@ -111,9 +111,25 @@ def extract(path):
     body_lines = [l for l in kept if l['size'] < body_size * 1.25 and not HEADING.match(l['text'])] or kept
     left = min((l['x0'] for l in body_lines), default=0)
     right = max((l['x1'] for l in body_lines), default=0)
+    # A page without positive paragraph cues cannot establish paragraph fidelity.
+    # Only downgrade where prose is wrapped and there are no observable gaps/indents;
+    # ordinary pages with explicit paragraph layout retain their positive path.
+    for pi in sorted({l['page'] for l in body_lines}):
+        prose = [l for l in body_lines if l['page'] == pi]
+        if len(prose) >= 2:
+            cues = any(b['top'] - a['bottom'] > body_size * .75 or abs(b['x0'] - a['x0']) > body_size
+                       for a, b in zip(prose, prose[1:]))
+            if not cues:
+                findings.append(finding('paragraph_layout', 'inconclusive', 'review',
+                    'Prosa sem recuos ou espaçamento de parágrafo observáveis; junções podem ocultar limites distintos.', page=pi))
+    largest_heading = max((l['size'] for l in kept if l['size'] >= body_size * 1.25), default=body_size)
     previous = None
     for l in kept:
         heading = bool(HEADING.match(l['text'])) or (l['size'] >= body_size * 1.25 and len(l['text']) < 140)
+        if heading and l['size'] < largest_heading * .9 and not HEADING.match(l['text']):
+            findings.append(finding('heading_hierarchy', 'inconclusive', 'review', 'Possível subtítulo: hierarquia não reconstruída; saída usa título de capítulo.', source=l['id']))
+        if re.match(r'^[“"«]', l['text']):
+            findings.append(finding('quotation', 'inconclusive', 'review', 'Possível citação ou diálogo: sinais textuais preservados, sem marcação semântica específica.', source=l['id']))
         if not heading and any(re.search(r'italic|oblique|bold', f, re.I) for f in l['fonts']):
             findings.append(finding('emphasis', 'inconclusive', 'review', 'Ênfase tipográfica detectada; texto preservado sem marcação de ênfase no MVP.', source=l['id']))
         if any(c in l['text'] for c in '∑∫√≈≠≤≥∂∞'):

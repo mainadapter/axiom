@@ -41,3 +41,5 @@ pdfplumber supplies geometry; pypdf offers an independent text path. Standard XM
 Rendering is separate from extraction and validation. Refinement copies existing chapter bytes and changes CSS/nav only. It cannot erase extraction findings or change paragraphs. Source-backed paragraph editing, emphasis/quotes, linked notes, images, complex layouts and local OCR are later focused increments with their own regression fixtures.
 
 Primary references: [pdfplumber](https://github.com/jsvine/pdfplumber), [pypdf extraction](https://pypdf.readthedocs.io/en/stable/user/extract-text.html), [EPUB 3.3](https://www.w3.org/TR/epub-33/), [EPUBCheck](https://www.w3.org/publishing/epubcheck/docs/getting-started/).
+
+Acceptance evidence and reproducible public-text sampling: [acceptance/evidence.md](acceptance/evidence.md). These real literary excerpts are re-typeset under controlled layout; they do not establish general performance on independently published PDFs.

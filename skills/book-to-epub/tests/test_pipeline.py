@@ -156,6 +156,33 @@ class PipelineTests(unittest.TestCase):
         self.assertTrue(any(b['text']=='iv' for b in m['blocks']))
         self.assertTrue(any(f['code']=='unresolved_pagination' for f in r['findings']))
 
+    def test_uncued_paragraphs_never_approved(self):
+        # Identical geometry can encode one paragraph or two: even full-width
+        # endings must not establish paragraph fidelity without positive cues.
+        for end in ['.', ',', '']:
+            with self.subTest(end=end):
+                src=self.root/f'ambiguous{len(end)}{ord(end) if end else 0}.pdf'
+                c=canvas.Canvas(str(src),pagesize=(600,800),invariant=1)
+                c.setFont('Times-Bold',20);c.drawString(50,700,'Chapter 1')
+                c.setFont('Times-Roman',12)
+                for i,line in enumerate(['A distinct paragraph ends here'+end,'Another distinct paragraph begins here.', 'Its continuation occupies the next line.']):
+                    c.drawString(50,660-i*16,line)
+                c.showPage();c.save()
+                r=convert(src,self.root/f'out{ord(end) if end else 0}',title='Ambiguous',language='en',command=COMMAND)
+                self.assertEqual(r['state'],'Revisão recomendada')
+                self.assertTrue(any(f['code']=='paragraph_layout' for f in r['findings']))
+    def test_subtitle_and_quotation_are_limitations(self):
+        src=self.root/'semantic.pdf';c=canvas.Canvas(str(src),pagesize=(600,800),invariant=1)
+        c.setFont('Times-Bold',20);c.drawString(50,700,'Chapter 1')
+        c.setFont('Times-Bold',16);c.drawString(50,670,'A subordinate heading')
+        c.setFont('Times-Roman',12);c.drawString(50,620,'"A quotation stays textual."')
+        c.drawString(50,580,'A separate ordinary paragraph.')
+        c.showPage();c.save()
+        r=convert(src,self.root/'semantic',title='Semantics',language='en',command=COMMAND)
+        self.assertEqual(r['state'],'Revisão recomendada')
+        for code in ['heading_hierarchy','quotation']:
+            self.assertTrue(any(f['code']==code for f in r['findings']))
+
     def test_simple_exact_text(self):
         r, m = self.run_case()
         self.assertEqual([b['text'] for b in m['blocks']], ['Capítulo 1', 'Primeiro parágrafo. Mantém acentos e pontuação.', 'Segundo parágrafo independente.'])
