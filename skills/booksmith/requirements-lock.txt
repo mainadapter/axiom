@@ -10,3 +10,4 @@ charset-normalizer==3.5.2
 cffi==2.1.1
 pycparser==3.0
 reportlab==4.4.9
+PyMuPDF==1.26.6

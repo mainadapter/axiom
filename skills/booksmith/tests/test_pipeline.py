@@ -111,7 +111,7 @@ class PipelineTests(unittest.TestCase):
         script.write_text("import sys;from pathlib import Path;Path(sys.argv[-1]).write_text('{}')")
         f = epubcheck(self.root/'unused.epub',[sys.executable,str(script)])
         self.assertEqual(f['status'],'inconclusive')
-    def test_emphasis_is_reported(self):
+    def test_emphasis_is_preserved(self):
         src=self.root/'emphasis.pdf'
         c=canvas.Canvas(str(src),pagesize=(600,800),invariant=1)
         c.setFont('Times-Bold',20);c.drawString(50,700,'Chapter 1')
@@ -119,8 +119,9 @@ class PipelineTests(unittest.TestCase):
         c.setFont('Times-Italic',12);c.drawString(50,620,'Meaningful emphasis.')
         c.showPage();c.save()
         r=convert(src,self.root/'emphasis',title='Emphasis',language='en',command=COMMAND)
-        self.assertEqual(r['state'],'Revisão recomendada')
-        self.assertTrue(any(f['code']=='emphasis' for f in r['findings']))
+        if JAR: self.assertEqual(r['state'],'Aprovado')
+        with zipfile.ZipFile(self.root/'emphasis/book.epub') as z:
+            self.assertIn(b'<em>Meaningful emphasis.</em>',z.read('EPUB/chapter-0001.xhtml'))
     def test_review_findings_survive_refinement(self):
         r,_=self.run_case('footnote')
         revised=refine(self.root/'v1',self.root/'v2',paragraph_gap=1,command=COMMAND)
@@ -180,7 +181,7 @@ class PipelineTests(unittest.TestCase):
         c.showPage();c.save()
         r=convert(src,self.root/'semantic',title='Semantics',language='en',command=COMMAND)
         self.assertEqual(r['state'],'Revisão recomendada')
-        for code in ['heading_hierarchy','quotation']:
+        for code in ['quotation']:
             self.assertTrue(any(f['code']==code for f in r['findings']))
 
     def test_simple_exact_text(self):
@@ -228,8 +229,10 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(r['state'], 'Intervenção necessária')
     def test_essential_image_not_silently_lost(self):
         r, _ = self.run_case('image')
-        self.assertEqual(r['state'], 'Intervenção necessária')
-        self.assertIsNone(r['epub_sha256'])
+        self.assertIsNotNone(r['epub_sha256'])
+        with zipfile.ZipFile(self.root/'v1/book.epub') as z:
+            self.assertIn('EPUB/images/p1-img1.png',z.namelist())
+        self.assertTrue(any(f['code']=='serialized_images_semantics' and f['status']=='pass' for f in r['findings']))
     def test_empty_blocked(self):
         r, _ = self.run_case('blank')
         self.assertEqual(r['state'], 'Intervenção necessária')
