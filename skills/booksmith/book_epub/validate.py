@@ -14,6 +14,7 @@ from urllib.parse import unquote, urlsplit
 from xml.etree import ElementTree as ET
 
 from .common import compact, finding, digest
+from .evidence import explicit_facts, narrative_facts, isolated, explicit, typographic_facts
 from .package import XHTML, EPUB, chapters, css, navigation_entries
 from .structure import document_structure, profiles, roman_value
 
@@ -44,14 +45,53 @@ def audit_editorial(model):
         checks.append(finding('editorial_structure',status,impact,detail,
             source=ids, pages=sorted({by_id[i]['page'] for i in ids}),
             blocks=list(dict.fromkeys(by_source[i]['id'] for i in ids if i in by_source)), **extra))
+    facts=explicit_facts(lines)
+    negatives=narrative_facts(lines)
+    repeated=typographic_facts(lines)
+    for ident,level in facts['levels'].items():
+        b=by_source.get(ident,{})
+        if b.get('kind')!='heading' or b.get('level')!=level:
+            emit('fail','blocking','Capítulo explícito contradiz a família de rótulos na fonte.',[ident],
+                 reason='explicit_level',expected_level=level,source_label=facts['values'][ident])
+    for issue in facts['issues']:
+        emit('inconclusive','review','Índice original e rótulos explícitos da fonte divergem; conferir lacunas e escopo.' if issue['reason']=='contents_source_mismatch' else 'Mais de dois níveis estruturais na fonte; hierarquia não suportada exige revisão.',
+             issue['source'],reason=issue['reason'])
+    for i,l in enumerate(lines):
+        b=by_source.get(l['id'],{})
+        if b.get('kind')!='heading' or l['id'] in facts['labels'] or l['id'] in repeated or l['id'] in context['parents'] or l['id'] in context['romans'] or l['id'] in context['frontmatter']:
+            continue
+        reasons=negatives.get(l['id'],[])
+        # Repeated body typography AND adjacent prose/absent isolation prove a
+        # contradiction. A dialogue-looking isolated title remains ambiguous.
+        if reasons:
+            proven=not isolated(lines,i) and {'continuous_prose_style','recurring_body_style'}<=set(reasons)
+            emit('fail' if proven else 'inconclusive','blocking' if proven else 'review',
+                 'Título contradiz continuidade narrativa.' if proven else 'Possível prosa/diálogo como título sem corroboração suficiente.',
+                 [l['id']],reason='narrative_heading',source_evidence=reasons,
+                 neighbours=[n['id'] for n in lines[max(0,i-1):i]+lines[i+1:i+2]])
+        elif explicit(l['text']) and not isolated(lines,i):
+            emit('inconclusive','review','Rótulo explícito sem isolamento ou família corroborada.',[l['id']],reason='unconfirmed_label')
+        elif not explicit(l['text']):
+            emit('inconclusive','review','Título tipográfico sem padrão estrutural corroborado; confirmar intenção editorial.',
+                 [l['id']],reason='ambiguous_title')
+    for page in sorted({l['page'] for l in lines}):
+        ls=[l for l in lines if l['page']==page]
+        suspects=[l['id'] for l in ls if by_source.get(l['id'],{}).get('kind')=='heading' and
+                  l['id'] not in facts['labels'] and l['id'] not in context['romans'] and l['id'] not in context['parents']]
+        if len(suspects)>=6 and len(suspects)>=len(ls)*.25:
+            emit('inconclusive','review','Concentração anormal de títulos sem corroboração estrutural.',suspects,
+                 reason='heading_density',headings=len(suspects),retained_lines=len(ls))
     for ident in context['parents']:
         b=by_source.get(ident,{})
         if b.get('kind')!='heading' or b.get('level')!=1:
-            emit('fail','blocking','Título principal contradiz ciclos romanos recorrentes na fonte.',[ident],reason='parent_level')
+            emit('fail','blocking','Título principal contradiz padrões narrativos recorrentes na fonte.',[ident],reason='parent_level')
     for ident in context['frontmatter']:
         b=by_source.get(ident,{})
         if b.get('kind')=='heading' or b.get('content_role')!='frontmatter':
             emit('fail','blocking','Pré-texto confirmado pelo índice foi tratado como estrutura narrativa.',[ident],reason='frontmatter_role')
+    for ident in context.get('closing',[]):
+        if by_source.get(ident,{}).get('kind')=='heading':
+            emit('inconclusive','review','Fórmula terminal em tipografia de corpo promovida à navegação.',[ident],reason='closing_heading')
     for ident in context['backmatter']:
         b=by_source.get(ident,{})
         if b.get('kind')=='heading' or b.get('content_role')!='backmatter':
@@ -77,7 +117,7 @@ def audit_editorial(model):
                  reason='roman_sequence',previous=previous,observed=value)
         previous=value
     if not checks:
-        emit('pass','review','Verificações contextuais limitadas: ciclos romanos e pré-texto não contradizem o modelo; não é certificação editorial universal.',
+        emit('pass','review','Verificações contextuais limitadas: rótulos explícitos, índice, continuidade narrativa e ciclos romanos sem contradição detectada; não é certificação editorial universal.',
              context['parents'] or [lines[0]['id']],parents=len(context['parents']),romans=len(context['romans']))
     return checks
 

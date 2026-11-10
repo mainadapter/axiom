@@ -1,7 +1,7 @@
 """Bounded layout evidence, separate from extraction and presentation."""
 import re
 from collections import Counter
-import statistics
+from .evidence import explicit, explicit_facts, narrative_facts, typographic_facts
 
 EXPLICIT = re.compile(r'^(?:cap[ií]tulo|chapter|parte|part|se[cç][aã]o|section)\s+(?:\d+|[IVXLCDM]+)\b', re.I)
 ROMAN = re.compile(r'^(?=[IVXLCDM]+$)M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$')
@@ -19,6 +19,10 @@ def profiles(lines):
         ls = [l for l in lines if l['page']==page]
         prose = [l for l in ls if len(l['text']) >= 40]
         size = Counter(round(l['size'],1) for l in prose for _ in range(len(l['text']))).most_common(1)[0][0] if prose else overall
+        # A smaller local quotation/epigraph cannot redefine a body style that
+        # is both dominant document-wide and actually present on this page.
+        if size < overall*.85 and sum(abs(l['size']-overall)<.1 and len(l['text'])>=40 for l in ls)>=3:
+            size=overall
         body = [l for l in ls if .85*size <= l['size'] <= 1.15*size and len(l['text'])>30] or ls
         left, right = min(l['x0'] for l in body), max(l['x1'] for l in body)
         normal_indents=Counter(round(a['x0']-left,1) for a,b in zip(body,body[1:]) if a['x0']>left+size*.75 and b['x0']<=left+size*.5)
@@ -30,6 +34,7 @@ def profiles(lines):
 def local_headings(lines, layout):
     found = {}
     sizes = []
+    narrative=narrative_facts(lines)
     for i,l in enumerate(lines):
         profile=layout[l['page']]
         size=profile['size']; text=l['text']
@@ -43,8 +48,8 @@ def local_headings(lines, layout):
         roman = bool(text and ROMAN.fullmatch(text))
         bold = any(font_style(f)['bold'] for f in l['fonts'])
         evidence = []
-        if EXPLICIT.match(text) and (EXPLICIT.fullmatch(text) or (isolated and (bold or l['size']>=size*1.25))): evidence.append('explicit_label')
-        if len(text)<140 and l['size']>=size*1.25: evidence.append('font_size')
+        if explicit(text) or (EXPLICIT.match(text) and isolated and (bold or l['size']>=size*1.25)): evidence.append('explicit_label')
+        if len(text)<140 and l['size']>=size*1.25 and isolated and not narrative.get(l['id']): evidence.append('font_size')
         if len(text)<100 and upper and isolated and (centered or bold): evidence.append('uppercase_layout')
         if len(text)<100 and centered and isolated and bold and l['size']>size*1.05: evidence.append('centered_style')
         if roman and centered and isolated: evidence.append('roman_layout')
@@ -54,7 +59,7 @@ def local_headings(lines, layout):
     largest=max(sizes,default=12)
     for l in lines:
         h=found.get(l['id'])
-        if h and not EXPLICIT.match(l['text']) and 'roman_layout' not in h['evidence']:
+        if h and not explicit(l['text']) and not EXPLICIT.match(l['text']) and 'roman_layout' not in h['evidence']:
             if l['size'] < largest*.9 and 'font_size' in h['evidence']:
                 h['level']=2
     return found
@@ -76,6 +81,7 @@ def document_structure(lines, layout):
     on earlier sparse pages; preceding prose is never silently demoted.
     """
     hs = local_headings(lines, layout)
+    narrative=narrative_facts(lines)
     romans = [i for i,l in enumerate(lines) if 'roman_layout' in hs.get(l['id'],{}).get('evidence',[])]
     starts = []
     for i in romans:
@@ -101,10 +107,16 @@ def document_structure(lines, layout):
             corroborated+=1
     if corroborated<2:
         parents=[]
-    frontmatter=[]
+    for ident,level in typographic_facts(lines).items():
+        hs[ident]=dict(level=level,evidence=['isolated_repeated_title_style'])
+    explicit_context=explicit_facts(lines)
+    for ident,level in explicit_context['levels'].items():
+        hs[ident]=dict(level=level,evidence=['explicit_label','repeated_label_family'])
+    frontmatter=explicit_context['frontmatter']
+    for ident in frontmatter:hs.pop(ident,None)
     if parents:
         for i in parents:
-            hs[lines[i]['id']] = dict(level=1, evidence=hs[lines[i]['id']]['evidence']+['repeated_roman_parent'])
+            hs[lines[i]['id']] = dict(level=explicit_context['levels'].get(lines[i]['id'],1), evidence=hs[lines[i]['id']]['evidence']+['repeated_roman_parent'])
         # Normalize only comparison keys. Text itself is never rewritten.
         keys=[re.sub(r'\s+',' ',lines[i]['text']).strip().casefold() for i in parents]
         first=parents[0]
@@ -119,6 +131,8 @@ def document_structure(lines, layout):
             frontmatter=[l['id'] for l in before]
             for ident in frontmatter:
                 hs.pop(ident,None)
+    if explicit_context['labels']:
+        parents=[i for i,l in enumerate(lines) if explicit_context['levels'].get(l['id'])==1]
     backmatter=[]
     if parents:
         # Only a terminal, uniformly smaller-font publishing section with both
@@ -127,15 +141,28 @@ def document_structure(lines, layout):
         tail=[]
         for page in sorted({l['page'] for l in lines},reverse=True):
             ls=[l for l in lines if l['page']==page]
-            if page<=lines[parents[-1]]['page'] or len(ls)>35 or any(l['size']>=body_size*.85 for l in ls):
+            if page<=lines[parents[-1]]['page'] or any(l['size']>=body_size*.85 for l in ls):
                 break
             tail=ls+tail
         text=' '.join(l['text'] for l in tail).casefold()
         if re.search(r'copyright|direitos.*reservados|all rights reserved',text) and re.search(r'\bisbn\b|\bcip\b',text):
             backmatter=[l['id'] for l in tail]
             for ident in backmatter:hs.pop(ident,None)
-    return hs, dict(parents=[lines[i]['id'] for i in parents],
-                    romans=[lines[i]['id'] for i in romans], frontmatter=frontmatter,backmatter=backmatter)
+    closing=[]
+    if parents:
+        narrative=[l for l in lines if l['id'] not in backmatter]
+        last=narrative[-1]
+        # A closing formula at the terminal boundary is presentation, not a
+        # chapter. Never apply to a title echoed in contents or larger typography.
+        if (re.fullmatch(r'(?:FIM(?: DO [^.!?]{1,30} VOLUME)?|THE END|END OF (?:THE )?VOLUME)',last['text'],re.I)
+                and last['size']<=layout[last['page']]['size']*1.05
+                and last['id'] not in explicit_context['labels']
+                and not any(l['text'].strip().casefold()==last['text'].strip().casefold()
+                            for l in lines if l['page']<lines[parents[0]]['page'])):
+            closing=[last['id']];hs.pop(last['id'],None)
+    return hs, dict(closing=closing,parents=[lines[i]['id'] for i in parents],
+                    romans=[lines[i]['id'] for i in romans if lines[i]['id'] in hs], frontmatter=frontmatter,backmatter=backmatter,
+                    explicit=explicit_context, narrative_evidence=narrative)
 
 
 def headings(lines, layout):

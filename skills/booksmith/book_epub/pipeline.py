@@ -28,7 +28,7 @@ ACTIONS = {
     'hyphenation':'Verifique o hífen preservado na origem.',
     'indented_run':'Confirme se o recuo representa uma citação.',
     'heading_hierarchy':'Confira a relação entre título e subtítulo.',
-    'editorial_structure':'Compare títulos pais, ciclos romanos e pré-texto com os blocos e páginas indicados; links válidos não comprovam estrutura editorial.',
+    'editorial_structure':'Compare rótulos explícitos, índice, continuidade narrativa, ciclos romanos e pré-texto com os blocos e páginas indicados; links válidos não comprovam estrutura editorial.',
     'epubcheck':'Consulte as mensagens do validador antes de aprovar.',
 }
 
