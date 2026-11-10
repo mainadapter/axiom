@@ -2,7 +2,7 @@ import hashlib
 import json
 import re
 
-VERSION = '0.1.0'
+VERSION = '0.2.0'
 
 def digest(data):
     return hashlib.sha256(data).hexdigest()

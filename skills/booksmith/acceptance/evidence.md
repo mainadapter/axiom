@@ -1,4 +1,6 @@
-# Acceptance evidence — 2026-11-10
+# Historical MVP acceptance evidence — 2026-11-10
+
+This document records engine 0.1.0 at commit 856e4a7. Its unsupported-image behavior and expected refusals are historical. Current results are in [Booksmith evidence](booksmith-evidence.md).
 
 ## Scope and reproducibility
 

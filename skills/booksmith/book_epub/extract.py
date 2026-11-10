@@ -8,11 +8,13 @@ import pdfplumber
 from pypdf import PdfReader
 
 from .common import compact, finding
+from .images import capture
+from .structure import profiles, headings, font_style, append_spans, quote_runs
 
 HEADING = re.compile(r'^(?:cap[ií]tulo|chapter|parte|part|se[cç][aã]o|section)\s+(?:\d+|[IVXLCDM]+)\b', re.I)
 
 def extract(path):
-    lines, findings, transforms, pages = [], [], [], []
+    lines, findings, transforms, pages, assets, image_sources = [], [], [], [], [], []
     try:
         reader = PdfReader(str(path))
     except Exception:
@@ -21,11 +23,11 @@ def extract(path):
         for pi, page in enumerate(pdf.pages, 1):
             chars = [c for c in page.chars if c.get('text', '').strip()]
             if not chars:
-                status = 'fail' if page.images or page.curves or page.rects else 'pass'
+                status = 'fail' if (page.curves or page.rects) and not page.images else 'pass'
                 findings.append(finding('textless_page', status, 'blocking' if status == 'fail' else 'tolerable',
                                         'Página sem texto extraível; OCR não implementado.' if status == 'fail' else 'Página vazia preservada no registro.', page=pi))
-            if page.images:
-                findings.append(finding('images', 'fail', 'blocking', 'Imagens detectadas; preservação fora do MVP.', page=pi, count=len(page.images)))
+            image_sources.extend(f'p{pi}-img{i}' for i in range(1,len(page.images)+1))
+            assets.extend(capture(page, pi, findings, transforms, len(pdf.pages)))
             if page.curves or len(page.lines) > 2 or len(page.rects) > 2:
                 findings.append(finding('graphics', 'inconclusive', 'review', 'Elementos vetoriais ou estrutura tabular exigem inspeção.', page=pi))
             if any(not c.get('upright', True) for c in chars):
@@ -43,18 +45,22 @@ def extract(path):
                 row.sort(key=lambda c: c['x0'])
                 size = statistics.median(c['size'] for c in row)
                 text = ''
+                spans = []
                 gaps = []
                 for j, char in enumerate(row):
+                    fragment = ''
                     if j:
                         gap = char['x0'] - row[j-1]['x1']
                         gaps.append(gap)
                         if gap > max(1.5, size * .18):
-                            text += ' '
-                    text += char['text']
+                            fragment += ' '
+                    fragment += char['text']
+                    text += fragment
+                    append_spans(spans, [dict(text=fragment, **font_style(char.get('fontname','')))])
                 if max(gaps, default=0) > max(36, size * 3):
                     big_gaps += 1
                 fonts = sorted({c.get('fontname', '') for c in row})
-                line = dict(fonts=fonts, id=f'p{pi}-l{len(page_lines)+1}', page=pi, text=text,
+                line = dict(spans=spans, fonts=fonts, id=f'p{pi}-l{len(page_lines)+1}', page=pi, text=text,
                             x0=round(row[0]['x0'], 3), x1=round(max(c['x1'] for c in row), 3),
                             top=round(min(c['top'] for c in row), 3), bottom=round(max(c['bottom'] for c in row), 3),
                             size=round(size, 3), width=page.width, height=page.height)
@@ -80,7 +86,7 @@ def extract(path):
             lines.extend(page_lines)
     if not lines:
         findings.append(finding('empty_document', 'fail', 'blocking', 'Nenhum conteúdo textual extraível.'))
-        return dict(lines=[], blocks=[], pages=pages, findings=findings, transformations=transforms)
+        return dict(lines=[], blocks=[], pages=pages, findings=findings, transformations=transforms, assets=assets, image_sources=image_sources)
     body_size = Counter(round(l['size'], 1) for l in lines).most_common(1)[0][0]
     def margin(l):
         if l['top'] < l['height'] * .08:
@@ -96,7 +102,7 @@ def extract(path):
     for l in lines:
         zone = margin(l)
         page_number = bool(zone and re.fullmatch(r'\d+', l['text']) and int(l['text']) == l['page'])
-        repeated_margin = zone and len(margin_pages[(zone, l['text'])]) >= threshold and not HEADING.match(l['text'])
+        repeated_margin = zone and len(margin_pages[(zone, l['text'])]) >= threshold and not HEADING.match(l['text']) and not (l['text'].isupper() and len(l['text']) < 100)
         if page_number or repeated_margin:
             l['excluded'] = 'page_number' if page_number else 'repeated_margin'
             transforms.append(dict(kind='exclude_running_matter', source=[l['id']], original=l['text'], reason=l['excluded']))
@@ -107,44 +113,55 @@ def extract(path):
     if not kept:
         findings.append(finding('no_body', 'fail', 'blocking', 'Todo o texto foi classificado como margem; inspeção necessária.'))
     vocabulary = set(re.findall(r'\b[\wÀ-ÿ]+(?:-[\wÀ-ÿ]+)?\b', ' '.join(l['text'] for l in kept)))
+    layout = profiles(kept)
+    hs = headings(kept, layout)
+    findings = [f for f in findings if not (f['code']=='unresolved_pagination' and 'roman_layout' in hs.get(f['evidence'].get('source'),{}).get('evidence',[]))]
+    quotes, possible_quotes = quote_runs(kept, layout, hs)
     blocks = []
-    body_lines = [l for l in kept if l['size'] < body_size * 1.25 and not HEADING.match(l['text'])] or kept
-    left = min((l['x0'] for l in body_lines), default=0)
-    right = max((l['x1'] for l in body_lines), default=0)
-    # A page without positive paragraph cues cannot establish paragraph fidelity.
-    # Only downgrade where prose is wrapped and there are no observable gaps/indents;
-    # ordinary pages with explicit paragraph layout retain their positive path.
+    body_lines = [l for l in kept if l['id'] not in hs]
     for pi in sorted({l['page'] for l in body_lines}):
         prose = [l for l in body_lines if l['page'] == pi]
-        if len(prose) >= 2:
-            cues = any(b['top'] - a['bottom'] > body_size * .75 or abs(b['x0'] - a['x0']) > body_size
-                       for a, b in zip(prose, prose[1:]))
-            if not cues:
-                findings.append(finding('paragraph_layout', 'inconclusive', 'review',
-                    'Prosa sem recuos ou espaçamento de parágrafo observáveis; junções podem ocultar limites distintos.', page=pi))
-    largest_heading = max((l['size'] for l in kept if l['size'] >= body_size * 1.25), default=body_size)
+        size = layout[pi]['size']
+        cues = any(b['top']-a['bottom'] > size*.75 or abs(b['x0']-a['x0']) > size*.75
+                   or re.match(r'^[—–](?![—–])', b['text']) for a,b in zip(prose,prose[1:]))
+        if len(prose)>=2 and not cues:
+            findings.append(finding('paragraph_layout','inconclusive','review',
+                'Prosa sem evidências positivas de limites de parágrafos; revisão necessária.',page=pi))
+    # Image events share the reading stream and force paragraph boundaries.
+    events = [(l['page'], l['top'], 1, l) for l in kept]
+    events += [(a['page'], a['bbox'][1], 0, a) for a in assets]
+    events.sort(key=lambda e:e[:3])
     previous = None
-    for l in kept:
-        heading = bool(HEADING.match(l['text'])) or (l['size'] >= body_size * 1.25 and len(l['text']) < 140)
-        if heading and l['size'] < largest_heading * .9 and not HEADING.match(l['text']):
-            findings.append(finding('heading_hierarchy', 'inconclusive', 'review', 'Possível subtítulo: hierarquia não reconstruída; saída usa título de capítulo.', source=l['id']))
+    for _, _, event_kind, l in events:
+        if event_kind == 0:
+            blocks.append(dict(id=f'b{len(blocks)+1}', kind='image', text='', source=[], asset=l['id'], cover=l['cover'], display_width_percent=l['display_width_percent']))
+            previous = None
+            continue
+        p = layout[l['page']]
+        body_size, left, right = p['size'], p['left'], p['right']
+        heading = l['id'] in hs
         if re.match(r'^[“"«]', l['text']):
             findings.append(finding('quotation', 'inconclusive', 'review', 'Possível citação ou diálogo: sinais textuais preservados, sem marcação semântica específica.', source=l['id']))
-        if not heading and any(re.search(r'italic|oblique|bold', f, re.I) for f in l['fonts']):
-            findings.append(finding('emphasis', 'inconclusive', 'review', 'Ênfase tipográfica detectada; texto preservado sem marcação de ênfase no MVP.', source=l['id']))
         if any(c in l['text'] for c in '∑∫√≈≠≤≥∂∞'):
             findings.append(finding('formula', 'inconclusive', 'review', 'Possível expressão matemática; sem reconstrução semântica no MVP.', source=l['id']))
         if l['size'] < body_size * .8:
             findings.append(finding('small_text', 'inconclusive', 'review', 'Possível nota ou elemento especial; texto mantido, vínculo não inferido.', source=l['id']))
         if any(ord(c) < 32 and not c.isspace() or c == '\ufffd' for c in l['text']):
             findings.append(finding('invalid_glyph', 'fail', 'blocking', 'Caractere inválido na extração.', source=l['id']))
-        new = previous is None or heading or blocks[-1]['kind'] == 'heading'
+        new = previous is None or heading or blocks[-1]['kind'] in ('heading','separator')
+        separator = bool(re.fullmatch(r'(?:\*\s*){3,}|[•·]{3,}|[—–]{3,}',l['text']))
+        dialogue = bool(re.match(r'^[—–](?![—–])', l['text']))
+        if separator or dialogue:
+            new = True
+        quote = l['id'] in quotes
+        if previous and quote != (previous['id'] in quotes):
+            new = True
         if previous and not new:
             if l['page'] == previous['page']:
                 gap = l['top'] - previous['bottom']
-                indented_run = l['x0'] > left + body_size and previous['x0'] > left + body_size
-                new = gap > body_size * .75 or (l['x0'] > left + body_size and not indented_run)
-                if indented_run and gap <= body_size * .75:
+                indented_run = quote and previous['id'] in quotes
+                new = gap > body_size * .75 or (l['x0'] > left + body_size*.75 and not indented_run)
+                if l['id'] in possible_quotes and previous['id'] in possible_quotes and gap <= body_size * .75:
                     findings.append(finding('indented_run', 'inconclusive', 'review', 'Possível citação em bloco ou estrutura recuada; semântica requer revisão.', source=[previous['id'], l['id']]))
                 if not new and previous['x1'] < right - body_size * 4 and re.search(r'[.!?][”’"\)]?$', previous['text']):
                     new = True
@@ -153,10 +170,20 @@ def extract(path):
                 # Strong continuation: unclosed sentence, full preceding line and no new indent.
                 continuation = not re.search(r'[.!?:;][”’"\)]?$', previous['text']) and previous['x1'] >= right - body_size * 2 and l['x0'] <= left + body_size
                 new = not continuation
-                if not continuation and not re.search(r'[.!?:;][”’"\)]?$', previous['text']):
+                if not continuation and l['x0'] <= left + body_size*.75:
                     findings.append(finding('page_boundary', 'inconclusive', 'review', 'Continuação de parágrafo entre páginas incerta; separação mantida.', source=[previous['id'], l['id']]))
         if new:
-            blocks.append(dict(id=f'b{len(blocks)+1}', kind='heading' if heading else 'paragraph', text=l['text'], source=[l['id']]))
+            kind = 'heading' if heading else 'separator' if separator else 'quote' if quote else 'paragraph'
+            block = dict(id=f'b{len(blocks)+1}', kind=kind, text=l['text'], source=[l['id']], spans=[dict(s) for s in l['spans']])
+            if heading:
+                block.update(level=hs[l['id']]['level'], heading_evidence=hs[l['id']]['evidence'])
+                if block['level']>1 and not any(b['kind']=='heading' and b.get('level',1)==1 for b in blocks):
+                    block['level']=1
+                    findings.append(finding('heading_hierarchy','inconclusive','review','Título subordinado sem título pai; conteúdo preservado em nível superior.',source=l['id']))
+            if dialogue: block['dialogue']=True
+            blocks.append(block)
+            transforms.append(dict(kind='start_block', source=[l['id']], block=block['id'],
+                                    reason='heading' if heading else 'separator' if separator else 'dialogue' if dialogue else 'layout'))
         else:
             block = blocks[-1]
             old = block['text']
@@ -175,6 +202,13 @@ def extract(path):
             else:
                 block['text'] += ' ' + l['text']
                 transforms.append(dict(kind='join_lines', source=[previous['id'], l['id']]))
+            suffix = block['text'][len(old):]
+            if not block['text'].startswith(old):
+                # Only the explicitly logged terminal hyphen may be removed.
+                block['spans'][-1]['text'] = block['spans'][-1]['text'][:-1]
+            elif suffix.startswith(' '):
+                append_spans(block['spans'], [dict(text=' ', bold=False, italic=False)])
+            append_spans(block['spans'], l['spans'])
             block['source'].append(l['id'])
         previous = l
     for block in blocks:
@@ -183,4 +217,4 @@ def extract(path):
     if not any(b['kind'] == 'heading' for b in blocks):
         findings.append(finding('no_headings', 'inconclusive', 'review', 'Nenhum título reconhecido; sumário terá entrada única.'))
     findings.append(finding('device_test', 'unavailable', 'tolerable', 'Leitor físico e serviço Send to Kindle não testados.'))
-    return dict(lines=lines, blocks=blocks, pages=pages, findings=findings, transformations=transforms)
+    return dict(lines=lines, blocks=blocks, pages=pages, findings=findings, transformations=transforms, assets=assets, image_sources=image_sources)
