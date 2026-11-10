@@ -14,6 +14,7 @@ from urllib.parse import unquote, urlsplit
 from xml.etree import ElementTree as ET
 
 from .common import compact, finding, digest
+from .spacing import audit_spacing
 from .evidence import explicit_facts, narrative_facts, isolated, explicit, typographic_facts
 from .package import XHTML, EPUB, chapters, css, navigation_entries
 from .structure import document_structure, profiles, roman_value
@@ -130,6 +131,9 @@ def audit_model(model):
                           'Cada linha retida deve aparecer exatamente uma vez e na ordem original.'))
     by_id = {l['id']: l for l in lines}
     text_ok = True
+    spacing_bad = []
+    tight_pairs = {tuple(t['source']) for t in model['transformations']
+                   if t['kind'] in ('dehyphenate','join_preserving_hyphen')}
     for b in model['blocks']:
         segments = [by_id[s]['text'] for s in b['source']]
         for t in model['transformations']:
@@ -140,11 +144,21 @@ def audit_model(model):
                     text_ok = False
                 else:
                     segments[index] = segments[index][:-1]
+        if model.get('schema',1)>=2:
+            reconstructed = ''
+            for index, segment in enumerate(segments):
+                pair=b['source'][index-1:index+1]
+                tight = index and tuple(pair) in tight_pairs
+                reconstructed += ('' if index==0 or tight else ' ') + segment
+            if reconstructed != b['text']:
+                spacing_bad.append(b['id'])
         raw = ''.join(segments)
         if compact(raw) != compact(b['text']):
             text_ok = False
     checks.append(finding('source_text', 'pass' if text_ok else 'fail', 'blocking', 'Texto reconstruído deve coincidir com linhas de origem e transformações registradas.'))
     if model.get('schema',1)>=2:
+        checks.append(finding('source_word_boundaries','fail' if spacing_bad else 'pass','blocking',
+            'Espaços dos blocos devem reproduzir as linhas e junções registradas, sem ignorar separadores.',blocks=spacing_bad))
         try:
             assets=model.get('assets',[])
             require(Counter(model.get('image_sources',[]))==Counter(a['id'] for a in assets), 'Imagem de origem ausente ou duplicada')
@@ -231,7 +245,7 @@ def epubcheck(path, command=None):
         return finding('epubcheck', status, impact, 'Validação de conformidade EPUB; não certifica fidelidade editorial.', report=data, returncode=result.returncode)
 
 def validate(path, model, profile, settings, labels=None, command=None):
-    checks = audit_model(model) + audit_editorial(model)
+    checks = audit_model(model) + audit_editorial(model) + audit_spacing(model)
     try:
         with zipfile.ZipFile(path) as z:
             names = z.namelist()

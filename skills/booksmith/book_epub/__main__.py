@@ -22,8 +22,23 @@ refine_parser.add_argument('--indent', type=float)
 refine_parser.add_argument('--labels', type=Path, help='JSON mapping chapter starting block IDs to navigation labels')
 for p in (convert_parser, refine_parser):
     p.add_argument('--epubcheck-jar', type=Path, help='Trusted local EPUBCheck JAR; never downloaded automatically')
+audit_parser = sub.add_parser('audit-spacing', help='Read-only re-audit of a bundle against its original PDF')
+audit_parser.add_argument('source', type=Path)
+audit_parser.add_argument('bundle', type=Path)
 args = vars(parser.parse_args())
 operation = args.pop('operation')
+if operation == 'audit-spacing':
+    from .pipeline import load_bundle
+    from .spacing import audit_spacing
+    from .common import classify
+    try:
+        model, _ = load_bundle(args['bundle'])
+        findings = audit_spacing(model, args['source'])
+    except (OSError,ValueError,KeyError) as error:
+        parser.exit(2, f'{error}\n')
+    state = classify(findings)
+    print(json.dumps(dict(state=state, findings=findings), ensure_ascii=False, indent=2))
+    raise SystemExit({'Aprovado':0,'Revisão recomendada':1,'Intervenção necessária':2}[state])
 jar = args.pop('epubcheck_jar')
 args['command'] = ['java', '-jar', str(jar.resolve())] if jar else None
 if operation == 'refine' and args['labels']:

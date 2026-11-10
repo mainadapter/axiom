@@ -56,3 +56,17 @@ Tests use independently authored expected text and structural assertions, comple
 Primary technical references: [pdfplumber](https://github.com/jsvine/pdfplumber), [pypdf text extraction](https://pypdf.readthedocs.io/en/stable/user/extract-text.html), [EPUB 3.3](https://www.w3.org/TR/epub-33/), [EPUBCheck](https://www.w3.org/publishing/epubcheck/docs/getting-started/).
 
 See `acceptance/novel-evidence.md` for the third private-source regression, generalization boundaries and commands. No per-book names, source pages or IDs occur in runtime classification. Source-specific acceptance oracles stay outside the motor. The installed materialization is unchanged.
+
+## Text spacing and source re-audit
+
+Explicit PDF whitespace survives reconstruction even below the geometric fallback threshold. The threshold itself is unchanged. The independent boundary audit requires both literal whitespace and pypdf corroboration before declaring a lost separator blocking. Punctuation-only differences are classified separately; geometry-only disagreements and unalignable text require review. The original line ledger, reconstruction joins and exact EPUB blocks are checked at separate boundaries.
+
+Re-audit an older bundle without changing its files:
+
+```bash
+python -m book_epub audit-spacing /path/ORIGINAL.pdf /path/BUNDLE > /path/spacing-audit.json
+```
+
+Exit codes are 0 (implemented spacing checks passed), 1 (review/unavailable), 2 (confirmed defect or invalid input). This is a spacing audit, not a replacement for full quality classification. Confirmed losses require reconversion from source; `refine` still changes CSS/nav only. Inconclusive examples remain in the ledger for source review; there is no bundle content editor or lexical replacement list. New bundles retain literal glyph text; old bundles require the matching PDF for retrospective certification.
+
+See [spacing investigation](acceptance/spacing-evidence.md) and the private-source reproducibility checker `acceptance/check_spacing.py`.

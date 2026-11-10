@@ -32,6 +32,7 @@ def extract(path):
                 findings.append(finding('graphics', 'inconclusive', 'review', 'Elementos vetoriais ou estrutura tabular exigem inspeção.', page=pi))
             if any(not c.get('upright', True) for c in chars):
                 findings.append(finding('rotated_text', 'fail', 'blocking', 'Texto rotacionado fora do MVP.', page=pi))
+            spaces = [c for c in page.chars if c.get('text', '').isspace()]
             rows = []
             for char in sorted(chars, key=lambda c: (c['top'], c['x0'])):
                 row = next((r for r in reversed(rows[-3:]) if abs(r[0]['top'] - char['top']) < 3), None)
@@ -52,8 +53,21 @@ def extract(path):
                     if j:
                         gap = char['x0'] - row[j-1]['x1']
                         gaps.append(gap)
-                        if gap > max(1.5, size * .18):
+                        # Preserve an explicit PDF separator even when kerning or
+                        # glyph metrics make its visible advance smaller than the
+                        # geometric fallback. Never lower the global gap threshold.
+                        explicit_spaces = [s for s in spaces
+                            if abs(s['top'] - char['top']) < 3
+                            and row[j-1]['x0'] < s['x0'] < char['x0']]
+                        geometric = gap > max(1.5, size * .18)
+                        if explicit_spaces or geometric:
                             fragment += ' '
+                        if explicit_spaces and not geometric:
+                            transforms.append(dict(kind='preserve_explicit_space',
+                                source=[f'p{pi}-l{len(page_lines)+1}'], offset=len(text),
+                                gap=round(gap,6), threshold=max(1.5,size*.18),
+                                space_bbox=[[s['x0'],s['top'],s['x1'],s['bottom']] for s in explicit_spaces],
+                                reason='literal_pdf_whitespace'))
                     fragment += char['text']
                     text += fragment
                     append_spans(spans, [dict(text=fragment, **font_style(char.get('fontname','')))])
@@ -76,13 +90,9 @@ def extract(path):
                                         'Extração independente indisponível nesta página.', page=pi))
             else:
                 same = compact(' '.join(l['text'] for l in page_lines)) == compact(independent)
-                # Also compare token boundaries: character equality alone hides lost spaces.
-                tokens_same = [compact(t) for t in ' '.join(l['text'] for l in page_lines).split()] == [compact(t) for t in independent.split()]
-                if same and not tokens_same:
-                    findings.append(finding('word_spacing', 'inconclusive', 'review', 'Extratores divergem nos espaços entre palavras.', page=pi))
                 findings.append(finding('independent_extraction', 'pass' if same else 'inconclusive', 'review',
                                         'Comparação por página com pypdf, ignorando apenas espaços e ligaturas.', page=pi))
-            pages.append(dict(page=pi, independent_text=independent, width=page.width, height=page.height))
+            pages.append(dict(page=pi, literal_text=''.join(c['text'] for c in page.chars), independent_text=independent, width=page.width, height=page.height))
             lines.extend(page_lines)
     if not lines:
         findings.append(finding('empty_document', 'fail', 'blocking', 'Nenhum conteúdo textual extraível.'))

@@ -44,3 +44,7 @@ Use pdfplumber for positioned characters, pypdf as an independent extraction cro
 
 ## Canonical and deployment boundaries
 This specification, quality.md, the Python implementation and profile definitions are runtime authority. README.md and tests document operation and acceptance. platforms/chatgpt.md is build-time guidance only. No installed ChatGPT Skill is replaced by this change; definitive materialization follows reviewed/approved canonical sources. Preserve the historical invocation alias and book_epub command when packaging, while publishing only one Booksmith entry.
+
+### Independent spacing fidelity
+
+Preserve explicit PDF separators before applying geometric gap inference. Distinguish a confirmed missing literal space (blocking with independent-parser corroboration), punctuation-only disagreement (tolerable), and uncertain geometric/extractor differences (review). Check reconstructed block boundaries without erasing whitespace. Provide locatable page/line/block/coordinate examples. Re-audit historical bundles against their hash-matched original PDF; confirmed losses require reconversion, not presentation-only refinement. Do not introduce dictionary substitutions or per-book motor rules.

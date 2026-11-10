@@ -24,7 +24,7 @@ ACTIONS = {
     'paragraph_layout':'Revise limites de parágrafos nas páginas sem pistas de diagramação.',
     'page_boundary':'Confira a continuação do parágrafo na mudança de página.',
     'independent_extraction':'Compare a página original com a extração; divergência não prova perda.',
-    'word_spacing':'Confira espaços entre palavras nas páginas indicadas.',
+    'word_spacing':'Confira página, linha, bloco, coordenadas e exemplos. Perda literal comprovada exige reconversão do PDF; diferença inconclusiva requer revisão.',
     'hyphenation':'Verifique o hífen preservado na origem.',
     'indented_run':'Confirme se o recuo representa uma citação.',
     'heading_hierarchy':'Confira a relação entre título e subtítulo.',
@@ -72,7 +72,7 @@ def report_markdown(report):
                 text.append('  Ação: '+g['action'])
                 for e in g['examples']:
                     # Compact source/page references, without hundreds of repeated messages.
-                    ref={k:v for k,v in e.items() if k in ('page','pages','source','block','blocks','bbox','reason','error')}
+                    ref={k:v for k,v in e.items() if k in ('page','pages','source','block','blocks','bbox','reason','error','produced','expected','candidate','line_offset','offset')}
                     if ref: text.append('  Exemplo: '+json.dumps(ref,ensure_ascii=False))
         text += ['']
     text += ['### Transformações','']
