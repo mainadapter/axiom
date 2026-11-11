@@ -1,7 +1,7 @@
 """Bounded layout evidence, separate from extraction and presentation."""
 import re
 from collections import Counter
-from .evidence import explicit, explicit_facts, narrative_facts, typographic_facts
+from .evidence import explicit, explicit_facts, narrative_facts, typographic_facts, style, lexical_title
 
 EXPLICIT = re.compile(r'^(?:cap[ií]tulo|chapter|parte|part|se[cç][aã]o|section)\s+(?:\d+|[IVXLCDM]+)\b', re.I)
 ROMAN = re.compile(r'^(?=[IVXLCDM]+$)M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$')
@@ -150,8 +150,8 @@ def document_structure(lines, layout):
             for ident in backmatter:hs.pop(ident,None)
     closing=[]
     if parents:
-        narrative=[l for l in lines if l['id'] not in backmatter]
-        last=narrative[-1]
+        narrative_lines=[l for l in lines if l['id'] not in backmatter]
+        last=narrative_lines[-1]
         # A closing formula at the terminal boundary is presentation, not a
         # chapter. Never apply to a title echoed in contents or larger typography.
         if (re.fullmatch(r'(?:FIM(?: DO [^.!?]{1,30} VOLUME)?|THE END|END OF (?:THE )?VOLUME)',last['text'],re.I)
@@ -160,9 +160,74 @@ def document_structure(lines, layout):
                 and not any(l['text'].strip().casefold()==last['text'].strip().casefold()
                             for l in lines if l['page']<lines[parents[0]]['page'])):
             closing=[last['id']];hs.pop(last['id'],None)
+    # Local detection proposes candidates; only consolidation authorizes a
+    # heading (and therefore a file/navigation boundary). Absence of narrative
+    # counter-evidence is not positive structural evidence.
+    confirmed = set(explicit_context['labels']) | set(typographic_facts(lines))
+    confirmed.update(lines[i]['id'] for i in parents + romans)
+    for i,l in enumerate(lines):
+        h=hs.get(l['id'])
+        if not h:
+            continue
+        if 'explicit_label' in h['evidence'] and not narrative.get(l['id']):
+            confirmed.add(l['id'])
+        # A distinctive, isolated title followed by ordinary body prose can
+        # stand alone: repetition/numbering is not required. Skip only adjacent
+        # title candidates on the SAME page (e.g. title + subtitle).
+        j=i+1
+        while j<len(lines) and lines[j]['page']==l['page'] and lines[j]['id'] in hs:
+            j+=1
+        body=lines[j] if j<len(lines) and lines[j]['page']==l['page'] else None
+        body_run=[]
+        if body:
+            for item in lines[j:]:
+                if (item['page']!=l['page'] or item['id'] in hs
+                        or abs(item['size']-body['size'])>body['size']*.1):
+                    break
+                body_run.append(item)
+        if ('font_size' in h['evidence'] and lexical_title(l['text']) and not narrative.get(l['id']) and body
+                and sum(len(item['text']) for item in body_run)>=40 and body['size']<l['size']*.85):
+            confirmed.add(l['id'])
+            h['evidence'].append('distinctive_title_body_transition')
+        # A single unnumbered work may have Roman subdivisions without the
+        # repeated parent cycles required for anthology detection.
+        if i+1<len(lines) and lines[i+1]['text']=='I' and lines[i+1]['id'] in hs:
+            run=[k for k in romans if k>i]
+            if (len(run)>=2 and lines[run[1]]['text']=='II'
+                    and any(len(n['text'])>=40 for n in lines[run[0]+1:run[1]])):
+                confirmed.add(l['id']);h['evidence'].append('roman_subdivision_context')
+    # Extend an already corroborated title family to unnumbered peers. The
+    # style must be anchored by positive structure, not merely repeated uppercase
+    # metadata. A following smaller body run and isolation remain required.
+    anchors={style(l):hs[l['id']]['level'] for l in lines
+             if l['id'] in confirmed and l['id'] in hs and l['id'] not in
+             {lines[k]['id'] for k in romans}}
+    for i,l in enumerate(lines[:-1]):
+        h=hs.get(l['id']);n=lines[i+1]
+        # A body run may open with a short dialogue turn. Sum its contiguous
+        # same-page lines rather than treating first-line length as semantics.
+        run=[n] if n['page']==l['page'] else []
+        for following in lines[i+2:]:
+            if (not run or following['page']!=l['page'] or following['id'] in hs
+                    or following['top']-run[-1]['bottom']>n['size']*.75
+                    or abs(following['size']-n['size'])>n['size']*.1):
+                break
+            run.append(following)
+        if (h and l['id'] not in confirmed and lexical_title(l['text']) and style(l) in anchors
+                and not narrative.get(l['id']) and n['page']==l['page']
+                and sum(len(item['text']) for item in run)>=40 and n['size']<l['size']*.95):
+            confirmed.add(l['id']);h['level']=anchors[style(l)]
+            h['evidence'].append('corroborated_title_family')
+    # Ordered contents matching for arbitrary title-only books is not yet
+    # implemented. A duplicate phrase alone is not a sufficient TOC signal.
+    pending={ident:dict(level=h['level'],evidence=h['evidence'],
+                       reason='uncorroborated_title')
+             for ident,h in hs.items() if ident not in confirmed}
+    for ident in pending:
+        del hs[ident]
     return hs, dict(closing=closing,parents=[lines[i]['id'] for i in parents],
                     romans=[lines[i]['id'] for i in romans if lines[i]['id'] in hs], frontmatter=frontmatter,backmatter=backmatter,
-                    explicit=explicit_context, narrative_evidence=narrative)
+                    explicit=explicit_context, narrative_evidence=narrative, pending_titles=pending)
 
 
 def headings(lines, layout):

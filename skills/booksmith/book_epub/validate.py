@@ -38,7 +38,7 @@ def audit_editorial(model):
     lines=[l for l in model['lines'] if not l.get('excluded')]
     if not lines:
         return []
-    _, context=document_structure(lines, profiles(lines))
+    source_headings, context=document_structure(lines, profiles(lines))
     by_source={s:b for b in model['blocks'] for s in b['source']}
     by_id={l['id']:l for l in lines}
     checks=[]
@@ -57,9 +57,16 @@ def audit_editorial(model):
     for issue in facts['issues']:
         emit('inconclusive','review','Índice original e rótulos explícitos da fonte divergem; conferir lacunas e escopo.' if issue['reason']=='contents_source_mismatch' else 'Mais de dois níveis estruturais na fonte; hierarquia não suportada exige revisão.',
              issue['source'],reason=issue['reason'])
+    for ident,candidate in context.get('pending_titles',{}).items():
+        promoted=by_source.get(ident,{}).get('kind')=='heading'
+        emit('inconclusive','review',
+             'Candidato sem corroboração promovido à navegação; reconverter para manter como texto.' if promoted else
+             'Candidato tipográfico preservado como texto comum; confirmar intenção editorial antes de promover.',
+             [ident],reason='ambiguous_title',decision='unsupported_promotion' if promoted else 'deferred',
+             candidate_evidence=candidate['evidence'])
     for i,l in enumerate(lines):
         b=by_source.get(l['id'],{})
-        if b.get('kind')!='heading' or l['id'] in facts['labels'] or l['id'] in repeated or l['id'] in context['parents'] or l['id'] in context['romans'] or l['id'] in context['frontmatter']:
+        if b.get('kind')!='heading' or l['id'] in facts['labels'] or l['id'] in repeated or l['id'] in context['parents'] or l['id'] in context['romans'] or l['id'] in context['frontmatter'] or l['id'] in context.get('pending_titles',{}) or any(e in source_headings.get(l['id'],{}).get('evidence',[]) for e in ('distinctive_title_body_transition','roman_subdivision_context','corroborated_title_family')):
             continue
         reasons=negatives.get(l['id'],[])
         # Repeated body typography AND adjacent prose/absent isolation prove a

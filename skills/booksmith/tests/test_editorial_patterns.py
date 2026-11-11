@@ -66,7 +66,7 @@ class EditorialPatterns(unittest.TestCase):
         ls=[line('A Different Journey',n=1,size=24,font='Bold'),line('A brief interlude',n=2,size=18,font='Bold'),
             line('Ordinary narrative provides the local reference for body text.',n=3),line('Another ordinary sentence continues the narrative.',n=4)]
         hs,_=document_structure(ls,profiles(ls));self.assertEqual([h['level'] for h in hs.values()],[1,2])
-        self.assertTrue(any(f['evidence'].get('reason')=='ambiguous_title' for f in audit_editorial(model_for(ls))))
+        self.assertTrue(all(f['status']=='pass' for f in audit_editorial(model_for(ls))))
 
     def test_mutations_detect_levels_missing_chapter_frontmatter_and_prose(self):
         ls=novel();m=model_for(ls)
@@ -111,14 +111,15 @@ class EditorialPatterns(unittest.TestCase):
         ls += [line('Smaller narrative text continues throughout this ordinary page.',8,i+1,10,top=40+i*15) for i in range(20)]
         self.assertEqual(profiles(ls)[8]['size'],10)
 
-    def test_terminal_formula_is_not_navigation_but_contents_echo_prevents_demotion(self):
+    def test_terminal_formula_and_unlabelled_duplicate_remain_nonstructural(self):
         ls=novel(contents=False)
         ls.append(line('THE END',8,1,12,'Bold'))
         hs,ctx=document_structure(ls,profiles(ls))
         self.assertNotIn('p8-l1',hs);self.assertEqual(ctx['closing'],['p8-l1'])
         ls.insert(0,line('THE END',1,1,12,'Bold'))
         hs,ctx=document_structure(ls,profiles(ls))
-        self.assertIn('p8-l1',hs);self.assertFalse(ctx['closing'])
+        self.assertNotIn('p8-l1',hs);self.assertFalse(ctx['closing'])
+        self.assertIn('p8-l1',ctx['pending_titles'])
 
     def test_deeper_hierarchy_is_reviewed_instead_of_certified(self):
         ls=[]

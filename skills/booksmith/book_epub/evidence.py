@@ -120,6 +120,16 @@ def explicit_facts(lines):
                 issues=issues,values={l['id']:parsed[l['id']] for l in confirmed})
 
 
+def lexical_title(text):
+    """Weak lexical support, not a catalogue/ISBN vocabulary or semantic verdict.
+
+    Predominantly numeric identifiers cannot be confirmed by typography alone.
+    Unusual numeric/symbolic titles remain candidates unless explicit structure
+    corroborates them; their characters are never removed or rewritten.
+    """
+    return sum(c.isalpha() for c in text)>sum(c.isdigit() for c in text)
+
+
 def typographic_facts(lines):
     """Corroborate repeated, isolated large title styles followed by body prose.
 
@@ -132,8 +142,16 @@ def typographic_facts(lines):
     body=weights.most_common(1)[0][0] if weights else 12
     negative=narrative_facts(lines);groups=defaultdict(list)
     for i,l in enumerate(lines[:-1]):
-        n=lines[i+1]
-        if (l['size']>=body*1.25 and len(l['text'])<100 and isolated(lines,i) and
+        j=i+1
+        # A title/subtitle stack still leads into body prose. Evaluate the
+        # same-page stack from source geometry, without block predictions.
+        while (j<len(lines) and lines[j]['page']==l['page']
+               and len(lines[j]['text'])<100 and lines[j]['size']>=body*1.25
+               and isolated(lines,j)):
+            j+=1
+        if j==len(lines):continue
+        n=lines[j]
+        if (l['size']>=body*1.25 and len(l['text'])<100 and lexical_title(l['text']) and isolated(lines,i) and
                 l['id'] not in negative and n['page']==l['page'] and len(n['text'])>=40 and n['size']<l['size']*.85):
             groups[style(l)].append(l)
     families=[ls for ls in groups.values() if len({l['page'] for l in ls})>=2]

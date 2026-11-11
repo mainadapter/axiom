@@ -70,3 +70,9 @@ python -m book_epub audit-spacing /path/ORIGINAL.pdf /path/BUNDLE > /path/spacin
 Exit codes are 0 (implemented spacing checks passed), 1 (review/unavailable), 2 (confirmed defect or invalid input). This is a spacing audit, not a replacement for full quality classification. Confirmed losses require reconversion from source; `refine` still changes CSS/nav only. Inconclusive examples remain in the ledger for source review; there is no bundle content editor or lexical replacement list. New bundles retain literal glyph text; old bundles require the matching PDF for retrospective certification.
 
 See [spacing investigation](acceptance/spacing-evidence.md) and the private-source reproducibility checker `acceptance/check_spacing.py`.
+
+## Conservative title promotion
+
+Local visual candidates do not automatically become headings. Consolidation requires explicit/contextual structure or distinctive title-to-body evidence; uncorroborated candidates remain exact ordinary text with a `pending_titles` ledger and `ambiguous_title` review finding. No section or navigation boundary is created from the pending hypothesis. Strong isolated unnumbered titles, title/subtitle stacks and peers in an already corroborated title family remain supported. Numeric-heavy identifiers do not qualify by typography alone; this uses character balance, not catalogue-code exceptions. Existing source-backed complementary-matter roles remain intact; same-font backmatter is not newly inferred.
+
+See [fifth-source investigation and promotion policy](acceptance/title-promotion-evidence.md), the independent synthetic tests in `tests/test_title_promotion.py`, and the private five-PDF regression checker `acceptance/check_title_promotion.py`. Reconversion is required to change old structural decisions; CSS/nav-label refinement still does not edit content or hierarchy. Version and installed materialization remain unchanged.

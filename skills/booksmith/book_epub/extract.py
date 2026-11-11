@@ -127,6 +127,7 @@ def extract(path):
     hs, editorial = document_structure(kept, layout)
     frontmatter = set(editorial['frontmatter'])
     backmatter = set(editorial['backmatter'])
+    pending_titles = set(editorial.get('pending_titles',{}))
     findings = [f for f in findings if not (f['code']=='unresolved_pagination' and 'roman_layout' in hs.get(f['evidence'].get('source'),{}).get('evidence',[]))]
     quotes, possible_quotes = quote_runs(kept, layout, hs)
     blocks = []
@@ -164,7 +165,7 @@ def extract(path):
             findings.append(finding('small_text', 'inconclusive', 'review', 'Possível nota ou elemento especial; texto mantido, vínculo não inferido.', source=l['id']))
         if any(ord(c) < 32 and not c.isspace() or c == '\ufffd' for c in l['text']):
             findings.append(finding('invalid_glyph', 'fail', 'blocking', 'Caractere inválido na extração.', source=l['id']))
-        new = previous is None or heading or l['id'] in frontmatter or (l['id'] in backmatter and previous['id'] not in backmatter) or blocks[-1]['kind'] in ('heading','separator')
+        new = previous is None or heading or l['id'] in pending_titles or (previous and previous['id'] in pending_titles) or l['id'] in frontmatter or (l['id'] in backmatter and previous['id'] not in backmatter) or blocks[-1]['kind'] in ('heading','separator')
         separator = bool(re.fullmatch(r'(?:\*\s*){3,}|[•·]{3,}|[—–]{3,}',l['text']))
         dialogue = bool(re.match(r'^[—–](?![—–])', l['text']))
         if separator or dialogue:
