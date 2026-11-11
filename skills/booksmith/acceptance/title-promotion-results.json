@@ -1,0 +1,129 @@
+{
+  "baseline_commit": "ef30644397b4ed0bf2ed6f6159f8b9d05a97c937",
+  "tests": {
+    "run": 94,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "seconds": 264.219,
+    "epubcheck": "5.3.0"
+  },
+  "implementation_sha256": "2aa75eb85599003f25976310f0d15fa70f7ed25ec27a2f36fde34b4d2d88d91b",
+  "regressions": [
+    {
+      "book": 1,
+      "pages": 190,
+      "images": 3,
+      "headings_before": 62,
+      "headings_after": 62,
+      "xhtml_before": 14,
+      "xhtml_after": 14,
+      "source_and_image_ledgers_identical": true,
+      "previous_epub_identical": true,
+      "confirmed_spacing_losses": 0,
+      "spacing_review": 1,
+      "state": "Revisão recomendada",
+      "epub_sha256": "54e1c3605ecc9394e1f234ce601521b496acc1067af691f8e030d20c3f1d8dab",
+      "epubcheck": {
+        "checkerVersion": "5.3.0",
+        "nError": 0,
+        "nFatal": 0,
+        "nWarning": 0,
+        "nUsage": 0
+      },
+      "source_sha256": "950d810c1d6eee93ae7c79d7662c17f635fe465fa85356b3e7440d38b35c5d25"
+    },
+    {
+      "book": 2,
+      "pages": 232,
+      "images": 2,
+      "headings_before": 54,
+      "headings_after": 54,
+      "xhtml_before": 8,
+      "xhtml_after": 8,
+      "source_and_image_ledgers_identical": true,
+      "previous_epub_identical": true,
+      "confirmed_spacing_losses": 0,
+      "spacing_review": 2,
+      "state": "Revisão recomendada",
+      "epub_sha256": "65df702d5881808cbdee313e40695b10aeae602306b29d6d063b6ba782e7cc71",
+      "epubcheck": {
+        "checkerVersion": "5.3.0",
+        "nError": 0,
+        "nFatal": 0,
+        "nWarning": 0,
+        "nUsage": 0
+      },
+      "source_sha256": "a66781bdf21e4655ec577cc096608b282bd08ca49a01e523f5dacd214b330861"
+    },
+    {
+      "book": 3,
+      "pages": 231,
+      "images": 3,
+      "headings_before": 7,
+      "headings_after": 7,
+      "xhtml_before": 9,
+      "xhtml_after": 9,
+      "source_and_image_ledgers_identical": true,
+      "previous_epub_identical": true,
+      "confirmed_spacing_losses": 0,
+      "spacing_review": 3,
+      "state": "Revisão recomendada",
+      "epub_sha256": "f3705d7cdf602b12c469bceb20b0fedfaec7f0f805879fc453e37319724e1782",
+      "epubcheck": {
+        "checkerVersion": "5.3.0",
+        "nError": 0,
+        "nFatal": 0,
+        "nWarning": 0,
+        "nUsage": 0
+      },
+      "source_sha256": "1ea6d7fc34a67469c6fc27177c8a16638ee7d7dab455dd2c12048b136b39d3dd"
+    },
+    {
+      "book": 4,
+      "pages": 227,
+      "images": 6,
+      "headings_before": 7,
+      "headings_after": 7,
+      "xhtml_before": 8,
+      "xhtml_after": 8,
+      "source_and_image_ledgers_identical": true,
+      "previous_epub_identical": true,
+      "confirmed_spacing_losses": 0,
+      "spacing_review": 1,
+      "state": "Revisão recomendada",
+      "epub_sha256": "1c91b14ba0e68de3c30e3d4deadca90efaf5f27b1c37ba0d79ec16cb034d8460",
+      "epubcheck": {
+        "checkerVersion": "5.3.0",
+        "nError": 0,
+        "nFatal": 0,
+        "nWarning": 0,
+        "nUsage": 0
+      },
+      "source_sha256": "a01d93268676bd5bb886f450c05e0d0adb12bd229f6ad575a58d0a3eadb24fa7"
+    },
+    {
+      "book": 5,
+      "pages": 264,
+      "images": 4,
+      "headings_before": 8,
+      "headings_after": 7,
+      "xhtml_before": 9,
+      "xhtml_after": 8,
+      "source_and_image_ledgers_identical": true,
+      "previous_epub_identical": false,
+      "confirmed_spacing_losses": 0,
+      "spacing_review": 5,
+      "state": "Revisão recomendada",
+      "epub_sha256": "6d2f3e1f145deb9082fb546cb0fc146b7dd774491bd7db34c894932b74be2984",
+      "epubcheck": {
+        "checkerVersion": "5.3.0",
+        "nError": 0,
+        "nFatal": 0,
+        "nWarning": 0,
+        "nUsage": 0
+      },
+      "source_sha256": "705ad221ff3b3a9ef96125c18b2a6a0a82d63eddf14b9753fc0c399b3529940b"
+    }
+  ]
+}
