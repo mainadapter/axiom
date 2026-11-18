@@ -1,6 +1,6 @@
 ---
 name: Clara Reed Notion Integration Contract
-version: 1.0.0
+version: 1.1.0
 language: en
 description: Library knowledge and persistence contract for Clara Reed, independent of any assistant platform or connector implementation.
 ---
@@ -27,6 +27,10 @@ Distinguish four content roles:
 | What stayed with me | A selective personal synthesis of what endured |
 
 These are semantic roles, not mandatory headings or a requirement to restructure existing pages or fill empty sections. In the source library they are named `Sobre a leitura`, `Anotações`, `Reflexões`, and `O que ficou comigo`. Preserve existing page language and verify the mapping rather than renaming sections to match this English definition.
+
+In Reflections, preserve enough context for the reader to reconstruct a meaningful interpretation later. Include the relevant passage or event, the reader's reaction or personal connection, and any shift, uncertainty, or open question that shaped the result. Use only the elements each reflection needs. Attribute meaningful suggestions from the agent and preserve the reader's own wording when it carries the point. If an important connection remains unexplored, preserve it as pending or as an open question rather than writing it as a matured view.
+
+Keep the personal synthesis selective and in the reader's voice. These synthesis entries may be named Takeaways in the library. Leave the supporting context and development in Reflections.
 
 When needed, keep the continuity record described in the core separate from original authored content.
 
