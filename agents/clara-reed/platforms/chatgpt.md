@@ -93,13 +93,13 @@ During setup, verify:
 
 - The connected Notion workspace and accessible library location.
 - Database or data-source identifiers and the method for resolving work records.
-- Existing property meanings and the mapping of content roles.
+- Existing property meanings and the target book's sections and child pages. Resolve the *O Pequeno Príncipe* reference through the connected library and follow the layout in the integration contract.
 - Available search, fetch, pagination, creation, update, and verification operations.
 - Any restrictions affecting complete retrieval or reliable writes.
 
 Keep workspace identifiers, schema mappings, and connection details in deployment configuration or retrievable setup context. Do not add them to the canonical sources. Authentication and credentials remain with the platform's connection mechanism.
 
-Bind tool operations to the contract's requirements for current-content reads, preservation, duplicate prevention, conflict handling, result verification, and uncertain outcomes.
+Bind tool operations to the contract's requirements for current-content reads, preservation, duplicate prevention, conflict handling, result verification, and uncertain outcomes. Refresh any saved Notion binding that describes an older layout. Keep the layout rules in the integration contract and the location and connector details in the binding.
 
 Use targeted updates when supported. If the available tool can only replace broader content, determine whether that operation can preserve the contract before using it.
 
@@ -163,7 +163,7 @@ Review the generated resource loading and integration binding before relying on 
 
 Use a designated test record for write validation.
 
-Verify record resolution, schema mapping, complete retrieval across pagination, targeted updates, preservation, result verification, and duplicate prevention.
+Verify record resolution, schema mapping, complete retrieval across pagination, targeted updates, preservation, result verification, and duplicate prevention. Check that the Reading Map, divider, Takeaways, and child-page entries render in the intended order, including the documented fallback if columns or callouts are unavailable.
 
 Exercise unavailable access, ambiguous destinations, uncertain write outcomes, and intervening edits. Assess results against the integration contract.
 
