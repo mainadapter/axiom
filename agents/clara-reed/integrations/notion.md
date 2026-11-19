@@ -13,21 +13,20 @@ The user's personal library in Notion is the intended destination for reading kn
 
 This file defines the integration's required semantics and operational safeguards. It does not implement a connector or prescribe database IDs, API calls, property schemas, or assistant-platform packaging.
 
-## Destination and content roles
+## Destination and book page structure
 
-Associate each work with the correct record according to existing library conventions. Resolve ambiguity when it could change the writing destination.
+Associate each work with its Library record. Resolve ambiguity when it could change the writing destination. The main page of *O Pequeno Príncipe* is the layout reference for book records. Consult it when available and apply this structure when creating or explicitly standardizing a book page:
 
-Distinguish these content roles:
+| Position | Notion block or section | Purpose |
+| --- | --- | --- |
+| First | `Reading Map`, with cards in two columns | Visual recall through questions, possible answers, and anchors in the work |
+| Between sections | Divider | Separates the map from the personal synthesis |
+| Below the divider | `Takeaways`, with the synthesis in the main column | First-person synthesis of what stayed with the reader |
+| Beside the synthesis | A callout with the `Reflections` and `Notes` child-page entries, in that order | Access to dated reflections and original reading notes |
 
-| Reference section | Function |
-| --- | --- |
-| About the reading | Context, motivation, expectations, and circumstances |
-| Notes | Original records made while reading |
-| Reflections | Matured interpretations, connections, changes, and open questions |
-| Reading Map | A visual index of the work through questions, brief answers, and anchors in the work |
-| Takeaways / What stayed with me | A selective personal synthesis of what endured |
+Keep the four standard names in English and write the contents in the reader's language. Use functional proportions rather than copying column widths. If columns or callouts are unavailable, keep the same section order and place the child-page entries directly below Takeaways. The standard has two content sections and two child pages. Keep review notes and dated reflections in their respective child pages.
 
-These are semantic roles, not mandatory headings or a requirement to restructure existing pages or fill empty sections. In the source library they are named `Sobre a leitura`, `Anotações`, `Reflexões`, and `O que ficou comigo`. Preserve existing page language and verify the mapping rather than renaming sections to match this English definition.
+When resuming an older record, locate equivalent sections and subpages by what they contain and reuse them for targeted writes. Apply the standard labels and arrangement when an update includes standardizing that page. Preserve existing content and child pages during that change. Create the Reading Map and Takeaways when the review reaches the completion criteria in the core.
 
 ### Reflections at block closure
 
@@ -39,12 +38,12 @@ In Reflections, preserve enough context for the reader to reconstruct a meaningf
 
 ### Final Reading Map and Takeaways
 
-Create or update both sections on the main work page once the agreed blocks are closed. Follow the library's *O Pequeno Príncipe* layout and preserve established labels and language when updating an existing record.
+Create or update both sections on the main work page once the agreed blocks are closed. Follow the section order and placement specified above. Verify that the Reading Map, Takeaways, and child-page entries are easy to find.
 
 - **Reading Map.** Use visual cards in two columns where the platform supports that layout. Each card contains a prominent question derived from one or more completed reflections, one short possible answer, and a final line of compact identifiers for scenes, characters, arguments, examples, or themes that locate the answer in the work. Choose anchors specific enough to recall the work later. An example is **O que torna um vínculo especial?**, followed by a one-sentence answer about time, care, and shared history, and the anchors *Rosa · Raposa · Amizades · Poço*. If the supported layout cannot display columns, keep the same card structure in a single column.
 - **Takeaways.** Write a brief, well-developed first-person text in the reader's voice. Organize it into thematic paragraphs that select the most important ideas from the Reflections and explain why they stayed with the reader. Include a short **O que permanece aberto** ending when an unresolved question matters to the reader. Keep supporting detail in Reflections and preserve relevant uncertainty and attribution.
 
-When needed, keep the continuity record described in the core separate from original authored content.
+When needed, keep the continuity record described in the core separate from Notes, Reflections, and the main page's standard sections.
 
 ## Writing rules
 
